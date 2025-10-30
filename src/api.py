@@ -6,6 +6,7 @@ import pandas as pd
 from pathlib import Path
 import uvicorn
 from typing import Literal
+import pydantic
 
 # Initialize FastAPI
 app = FastAPI(
@@ -161,7 +162,12 @@ def predict_rating(features: RestaurantFeatures):
 
     try:
         # Convert Pydantic model to dict then DataFrame
-        input_dict = features.model_dump()
+        # Handle both Pydantic v1 and v2
+        if hasattr(features, 'model_dump'):
+            input_dict = features.model_dump()  # Pydantic v2
+        else:
+            input_dict = features.dict()  # Pydantic v1
+
         input_df = pd.DataFrame([input_dict])
 
         # Make prediction
