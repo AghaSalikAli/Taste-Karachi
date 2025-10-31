@@ -8,6 +8,7 @@ import pydantic
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Initialize FastAPI
 app = FastAPI(
@@ -15,6 +16,9 @@ app = FastAPI(
     description="Predict restaurant ratings in Karachi based on features",
     version="1.0.0",
 )
+
+# Initialize Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app)
 
 # Load model at startup
 MODEL_PATH = Path(__file__).parent.parent / "models"

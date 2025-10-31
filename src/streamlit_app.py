@@ -35,25 +35,56 @@ with col1:
         help="Enter the area in Karachi (e.g., Clifton, DHA, Gulshan-e-Iqbal)",
     )
 
-    category = st.selectbox(
+    category_option = st.selectbox(
         "Restaurant Category",
         options=[
-            "Pakistani",
-            "Fast Food Restaurant",
             "Restaurant",
+            "Fast Food Restaurant",
             "Cafe",
+            "Barbecue Restaurant",
             "Chinese Restaurant",
-            "Italian Restaurant",
-            "Continental Restaurant",
-            "Dessert Shop",
             "Pizza Restaurant",
-            "Burger Restaurant",
-            "BBQ Joint",
-            "Deli",
             "Bakery",
+            "Dessert Shop",
+            "Indian Restaurant",
+            "Buffet Restaurant",
+            "Italian Restaurant",
+            "Juice Shop",
+            "Seafood Restaurant",
+            "Korean Restaurant",
+            "Breakfast Restaurant",
+            "Thai Restaurant",
+            "Asian Restaurant",
+            "Japanese Restaurant",
+            "Middle Eastern Restaurant",
+            "American Restaurant",
+            "Turkish Restaurant",
+            "Fine Dining Restaurant",
+            "Food Store",
+            "Mediterranean Restaurant",
+            "Afghan Restaurant",
+            "Event Venue",
+            "Wholesaler",
+            "Mexican Restaurant",
+            "Market",
+            "Food Court",
+            "Steak House",
+            "French Restaurant",
+            "Lebanese Restaurant",
+            "Other",
         ],
         index=0,
     )
+
+    # Show text input if "Other" is selected
+    if category_option == "Other":
+        category = st.text_input(
+            "Enter Custom Category",
+            value="",
+            help="Enter your restaurant category",
+        )
+    else:
+        category = category_option
 
     price_level = st.selectbox(
         "Price Level",

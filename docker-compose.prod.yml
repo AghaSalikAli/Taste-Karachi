@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend Service
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taste-karachi-api-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV=production
+    volumes:
+      - ./models:/app/models
+    networks:
+      - taste-karachi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Streamlit Frontend Service
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taste-karachi-frontend-prod
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FASTAPI_URL=http://localhost:8000
+      # Update this with your EC2 public IP or domain when deploying
+      # - FASTAPI_URL=http://YOUR_EC2_PUBLIC_IP:8000
+    depends_on:
+      - fastapi
+    networks:
+      - taste-karachi-network
+    command: streamlit run src/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Prometheus Service
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: taste-karachi-prometheus-prod
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - taste-karachi-network
+    depends_on:
+      - fastapi
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Grafana Service
+  grafana:
+    image: grafana/grafana:latest
+    container_name: taste-karachi-grafana-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # Update this with your EC2 public IP or domain when deploying
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      # - GF_SERVER_ROOT_URL=http://YOUR_EC2_PUBLIC_IP:3000
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - taste-karachi-network
+    depends_on:
+      - prometheus
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  taste-karachi-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

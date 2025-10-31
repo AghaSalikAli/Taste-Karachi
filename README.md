@@ -1,56 +1,80 @@
 # Taste Karachi
 
-This MLOps project predicts a restaurant's rating on a scale of 5 based on multiple features to help
-owners improve.
+MLOps project that predicts restaurant ratings in Karachi (0-5 scale) based on 30+ features including location, amenities, services, and operational characteristics.
 
-## 🚀 Quick Start with Docker Compose (Recommended)
+## 🚀 Quick Start
 
-The easiest way to run both the API and web interface:
+### Local Development
 
-```powershell
-docker-compose up --build
+```bash
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
-Then access:
-- **Streamlit Web Interface**: http://localhost:8501 (User-friendly UI)
-- **FastAPI Backend**: http://localhost:8000 (REST API)
-- **API Documentation**: http://localhost:8000/docs
+**Services:**
+- **Streamlit UI**: http://localhost:8501
+- **FastAPI API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3000 (admin/admin)
 
-For detailed Docker Compose instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
+### Production Deployment
 
-## 🐳 Manual Docker Commands (Alternative)
+Update URLs in `docker-compose.prod.yml` with your EC2 IP, then:
 
-### Build and run FastAPI only:
-
-```powershell
-docker build -t taste-karachi .
-
-docker run -p 8000:8000 --name taste-karachi-api taste-karachi
+```bash
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-Once the container is up and running, in a new terminal run:
-
-```powershell
-python src/test.py
-```
-
-## 💻 Local Development
-
-### Start FastAPI:
-```powershell
-python src/api.py
-```
-
-### Start Streamlit:
-```powershell
-streamlit run src/streamlit_app.py
-```
+See [DOCKER_SETUP.md](DOCKER_SETUP.md) for detailed instructions.
 
 ## 📊 Features
 
-- **Machine Learning Model**: Predicts restaurant ratings based on 30+ features
-- **REST API**: FastAPI backend with automatic documentation
-- **Web Interface**: Streamlit frontend for easy interaction
-- **Containerized**: Docker and Docker Compose support
-- **MLOps Pipeline**: MLflow integration for model tracking
+- **ML Model**: Rating prediction with MLflow integration
+- **FastAPI Backend**: REST API with automatic documentation
+- **Streamlit Frontend**: Interactive web interface
+- **Monitoring**: Prometheus metrics + Grafana dashboards
+- **CI/CD**: Automated testing, linting, and security scans
+- **Production-Ready**: Separate dev/prod configurations
+
+## 💻 Local Development (Without Docker)
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Start FastAPI
+python src/api.py
+
+# Start Streamlit (in another terminal)
+streamlit run src/streamlit_app.py
+```
+
+## 📈 Monitoring
+
+- **Metrics endpoint**: http://localhost:8000/metrics
+- **Pre-configured Grafana dashboard** with request rates, latency, status codes
+- **Prometheus** scrapes FastAPI metrics every 10s
+
+## 🧪 API Testing
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Test prediction
+python src/test.py
+```
+
+## 📁 Project Structure
+
+```
+Taste-Karachi/
+├── src/                    # Application code
+├── models/                 # MLflow model artifacts
+├── prometheus/             # Prometheus configuration
+├── grafana/                # Grafana dashboards & provisioning
+├── docker-compose.dev.yml  # Development environment
+├── docker-compose.prod.yml # Production environment
+└── DOCKER_SETUP.md        # Detailed Docker guide
+```
 
