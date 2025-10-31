@@ -1,5 +1,8 @@
 
-![alt text](images/logo.svg)
+
+<p align="center">
+  <img src="images/logo.svg" alt="Taste Karachi Logo" width="180" height="180" />
+</p>
 
 
 #
@@ -256,6 +259,8 @@ docker exec -it taste-karachi-api-dev bash
 - [Prometheus Docs](https://prometheus.io/docs/)
 - [Grafana Docs](https://grafana.com/docs/)
 
-### Mermaid Chart
+### System Architecture Overview
+
+Below is a high-level architecture of the Taste Karachi MLOps pipeline:
 
 ![alt text](images/flowchart.svg)
