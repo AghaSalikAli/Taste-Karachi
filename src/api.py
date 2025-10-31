@@ -7,8 +7,8 @@ import pandas as pd
 import pydantic
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 from prometheus_fastapi_instrumentator import Instrumentator
+from pydantic import BaseModel, Field
 
 # Initialize FastAPI
 app = FastAPI(

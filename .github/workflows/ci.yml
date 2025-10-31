@@ -85,7 +85,9 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Verify Docker Compose configuration
-      run: docker-compose config
+      run: |
+        docker-compose -f docker-compose.dev.yml config
+        docker-compose -f docker-compose.prod.yml config
 
   api-tests:
     name: API Integration Tests
@@ -183,7 +185,7 @@ jobs:
 
     - name: Build and start services with Docker Compose
       run: |
-        docker-compose up -d --build
+        docker-compose -f docker-compose.dev.yml up -d --build
 
     - name: Wait for services to be healthy
       run: |
@@ -193,40 +195,52 @@ jobs:
     - name: Check API responds (structure test)
       run: |
         echo "Testing if API is accessible..."
-        curl -f http://localhost:8000/ || (docker-compose logs fastapi && exit 1)
+        curl -f http://localhost:8000/ || (docker-compose -f docker-compose.dev.yml logs fastapi && exit 1)
         echo "✅ API root endpoint accessible"
 
     - name: Check API health endpoint
       if: steps.check_model.outputs.model_exists == 'true'
       run: |
         echo "Testing API health with model..."
-        curl -f http://localhost:8000/health || (docker-compose logs fastapi && exit 1)
+        curl -f http://localhost:8000/health || (docker-compose -f docker-compose.dev.yml logs fastapi && exit 1)
         echo "✅ API health check passed"
 
     - name: Check API docs endpoint
       run: |
         echo "Testing API documentation..."
-        curl -f http://localhost:8000/docs || (docker-compose logs fastapi && exit 1)
+        curl -f http://localhost:8000/docs || (docker-compose -f docker-compose.dev.yml logs fastapi && exit 1)
         echo "✅ API docs accessible"
 
     - name: Check Streamlit health
       run: |
         echo "Testing Streamlit frontend..."
-        curl -f http://localhost:8501 || (docker-compose logs streamlit && exit 1)
+        curl -f http://localhost:8501 || (docker-compose -f docker-compose.dev.yml logs streamlit && exit 1)
         echo "✅ Streamlit frontend accessible"
+
+    - name: Check Prometheus health
+      run: |
+        echo "Testing Prometheus monitoring..."
+        curl -f http://localhost:9090/-/healthy || (docker-compose -f docker-compose.dev.yml logs prometheus && exit 1)
+        echo "✅ Prometheus accessible"
+
+    - name: Check Grafana health
+      run: |
+        echo "Testing Grafana dashboard..."
+        curl -f http://localhost:3000/api/health || (docker-compose -f docker-compose.dev.yml logs grafana && exit 1)
+        echo "✅ Grafana accessible"
 
     - name: Run integration test against Docker Compose stack
       if: steps.check_model.outputs.model_exists == 'true'
       run: |
-        docker-compose exec -T fastapi python src/test.py || true
+        docker-compose -f docker-compose.dev.yml exec -T fastapi python src/test.py || true
 
     - name: Show logs on failure
       if: failure()
-      run: docker-compose logs
+      run: docker-compose -f docker-compose.dev.yml logs
 
     - name: Cleanup
       if: always()
-      run: docker-compose down -v
+      run: docker-compose -f docker-compose.dev.yml down -v
 
   model-validation:
     name: Model and Data Validation
@@ -252,9 +266,12 @@ jobs:
         echo "Checking required files..."
         test -f requirements.txt || exit 1
         test -f Dockerfile || exit 1
-        test -f docker-compose.yml || exit 1
+        test -f docker-compose.dev.yml || exit 1
+        test -f docker-compose.prod.yml || exit 1
         test -f src/api.py || exit 1
         test -f src/streamlit_app.py || exit 1
+        test -f prometheus/prometheus.yml || exit 1
+        test -d grafana/provisioning || exit 1
         echo "All required files present"
 
   summary:
