@@ -1,5 +1,8 @@
 # src/api.py
+
 from fastapi import FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from pydantic import BaseModel, Field
 import mlflow
 import mlflow.pyfunc
@@ -26,6 +29,14 @@ app = FastAPI(
     description="Predict restaurant ratings in Karachi based on features",
     version="1.0.0",
 )
+
+
+# Initialize Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app)
+
+# Load model at startup
+MODEL_PATH = Path(__file__).parent.parent / "models"
+
 
 # Global model variable
 model = None

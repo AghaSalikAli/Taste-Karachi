@@ -23,6 +23,17 @@ Try the application on our public instance:
 | 📊 **Prometheus** | http://54.196.196.185:9090 | Metrics collection |
 | 📈 **Grafana** | http://54.196.196.185:3000 | Monitoring dashboards (admin/admin) |
 | 📉 **Metrics** | http://54.196.196.185:8000/metrics | Prometheus metrics endpoint |
+| 👩‍💻 **MLFlow Server** | http://54.196.196.185:5000/ | Model experiments | 
+
+
+## ☁️ Cloud Services Used
+
+This project leverages several AWS cloud services for deployment, storage, and monitoring:
+
+- **AWS EC2 (t3.micro)**: Hosts the application services including FastAPI, Streamlit, Prometheus, and Grafana. 
+- **AWS S3**: Used for storing trained machine learning models, enabling easy access and versioning for model artifacts.
+- **AWS CloudWatch**: Provides monitoring and logging for the deployed services, including resource usage and application logs.
+
 
 ### Quick API Test
 
@@ -104,8 +115,6 @@ docker-compose -f docker-compose.dev.yml up -d --build
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
 
-See [DOCKER_SETUP.md](DOCKER_SETUP.md) for production deployment and detailed setup instructions.
-
 ## 📊 Features
 
 - **ML Model**: Rating prediction with MLflow integration
@@ -170,12 +179,12 @@ python src/test.py
 ```
 Taste-Karachi/
 ├── src/                    # Application code
-├── models/                 # MLflow model artifacts
 ├── prometheus/             # Prometheus configuration
+├── notebooks/              # Cleaning and Training Notebooks
 ├── grafana/                # Grafana dashboards & provisioning
+├── screenshots/            # Evidently AI & CloudWatch Screenshots
 ├── docker-compose.dev.yml  # Development environment
-├── docker-compose.prod.yml # Production environment
-└── DOCKER_SETUP.md        # Detailed Docker guide
+└── docker-compose.prod.yml # Production environment
 ```
 
 ## ❓ FAQ
@@ -251,15 +260,9 @@ docker logs taste-karachi-api-dev
 docker exec -it taste-karachi-api-dev bash
 ```
 
-### Documentation
-
-- [DOCKER_SETUP.md](DOCKER_SETUP.md) - Deployment guide
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [Prometheus Docs](https://prometheus.io/docs/)
-- [Grafana Docs](https://grafana.com/docs/)
-
 ### System Architecture Overview
 
 Below is a high-level architecture of the Taste Karachi MLOps pipeline:
 
 ![alt text](images/flowchart.svg)
+
