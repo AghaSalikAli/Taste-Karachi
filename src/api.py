@@ -1,5 +1,4 @@
 # src/api.py
-<<<<<<< HEAD
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import mlflow
@@ -20,18 +19,6 @@ mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 # Model Registry Configuration
 MODEL_NAME = "Restaurant_rating_prediction_regression"
 MODEL_VERSION = "1"
-=======
-from pathlib import Path
-from typing import Literal
-
-import mlflow.pyfunc
-import pandas as pd
-import pydantic
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from prometheus_fastapi_instrumentator import Instrumentator
-from pydantic import BaseModel, Field
->>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
 
 # Initialize FastAPI
 app = FastAPI(
@@ -40,15 +27,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-<<<<<<< HEAD
 # Global model variable
-=======
-# Initialize Prometheus metrics instrumentation
-Instrumentator().instrument(app).expose(app)
-
-# Load model at startup
-MODEL_PATH = Path(__file__).parent.parent / "models"
->>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
 model = None
 model_info = {}
 
@@ -78,22 +57,12 @@ async def load_model():
         print(f"   Version: {MODEL_VERSION}")
 
     except Exception as e:
-<<<<<<< HEAD
         print(f"❌ Error loading model from registry: {e}")
         print(f"   Make sure:")
         print(f"   1. MLflow server is running at {MLFLOW_TRACKING_URI}")
         print(f"   2. Model '{MODEL_NAME}' exists in the registry")
         print(f"   3. Version '{MODEL_VERSION}' exists")
         raise e
-=======
-        print(f"⚠️ Warning: Model not loaded: {e}")
-        print(
-            "ℹ️ API will start but prediction endpoint will return 503 until model is available"
-        )
-        print("ℹ️ To train model, run: notebooks/train.ipynb")
-        model = None
-        # Don't raise - allow API to start for testing purposes
->>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
 
 
 # Define input schema matching your features
@@ -214,7 +183,6 @@ def health_check():
     return {
         "status": "healthy",
         "model_loaded": model is not None,
-<<<<<<< HEAD
         "model_info": model_info
     }
 
@@ -234,10 +202,6 @@ def get_model_info():
         "model_version": model_info.get("version"),
         "model_uri": model_info.get("uri"),
         "mlflow_tracking_uri": MLFLOW_TRACKING_URI
-=======
-        "model_name": "Restaurant_rating_prediction_regression",
-        "version": "v1",
->>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
     }
 
 
