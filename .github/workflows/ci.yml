@@ -65,6 +65,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Install Docker Compose v2.29.2
+      run: |
+        sudo rm -f /usr/local/bin/docker-compose
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -155,6 +162,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Install Docker Compose v2.29.2
+      run: |
+        sudo rm -f /usr/local/bin/docker-compose
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
 
     - name: Check if model exists
       id: check_model
