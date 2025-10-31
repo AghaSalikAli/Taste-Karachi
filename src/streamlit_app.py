@@ -1,12 +1,13 @@
-import streamlit as st
-import requests
 import json
+
+import requests
+import streamlit as st
 
 # Page configuration
 st.set_page_config(
     page_title="Taste Karachi - Restaurant Rating Predictor",
     page_icon="🍽️",
-    layout="wide"
+    layout="wide",
 )
 
 # API endpoint (will connect to FastAPI service in Docker)
@@ -14,46 +15,88 @@ API_URL = "http://fastapi:8000/predict"
 
 # Title and description
 st.title("🍽️ Taste Karachi - Restaurant Rating Predictor")
-st.markdown("""
+st.markdown(
+    """
 Predict restaurant ratings in Karachi based on various features like location, amenities, and services.
 Fill in the details below to get a predicted rating for your restaurant!
-""")
+"""
+)
 
 # Create two columns for the form
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("📍 Basic Information")
-    
+
     # Basic categorical features
     area = st.text_input(
         "Area/Location",
         value="Clifton",
-        help="Enter the area in Karachi (e.g., Clifton, DHA, Gulshan-e-Iqbal)"
+        help="Enter the area in Karachi (e.g., Clifton, DHA, Gulshan-e-Iqbal)",
     )
-    
-    category = st.selectbox(
+
+    category_option = st.selectbox(
         "Restaurant Category",
         options=[
-            "Pakistani", "Fast Food Restaurant", "Restaurant", "Cafe",
-            "Chinese Restaurant", "Italian Restaurant", "Continental Restaurant",
-            "Dessert Shop", "Pizza Restaurant", "Burger Restaurant",
-            "BBQ Joint", "Deli", "Bakery"
+            "Restaurant",
+            "Fast Food Restaurant",
+            "Cafe",
+            "Barbecue Restaurant",
+            "Chinese Restaurant",
+            "Pizza Restaurant",
+            "Bakery",
+            "Dessert Shop",
+            "Indian Restaurant",
+            "Buffet Restaurant",
+            "Italian Restaurant",
+            "Juice Shop",
+            "Seafood Restaurant",
+            "Korean Restaurant",
+            "Breakfast Restaurant",
+            "Thai Restaurant",
+            "Asian Restaurant",
+            "Japanese Restaurant",
+            "Middle Eastern Restaurant",
+            "American Restaurant",
+            "Turkish Restaurant",
+            "Fine Dining Restaurant",
+            "Food Store",
+            "Mediterranean Restaurant",
+            "Afghan Restaurant",
+            "Event Venue",
+            "Wholesaler",
+            "Mexican Restaurant",
+            "Market",
+            "Food Court",
+            "Steak House",
+            "French Restaurant",
+            "Lebanese Restaurant",
+            "Other",
         ],
-        index=0
+        index=0,
     )
-    
+
+    # Show text input if "Other" is selected
+    if category_option == "Other":
+        category = st.text_input(
+            "Enter Custom Category",
+            value="",
+            help="Enter your restaurant category",
+        )
+    else:
+        category = category_option
+
     price_level = st.selectbox(
         "Price Level",
         options=[
             "PRICE_LEVEL_INEXPENSIVE",
             "PRICE_LEVEL_MODERATE",
             "PRICE_LEVEL_EXPENSIVE",
-            "PRICE_LEVEL_VERY_EXPENSIVE"
+            "PRICE_LEVEL_VERY_EXPENSIVE",
         ],
-        index=1
+        index=1,
     )
-    
+
     st.subheader("🗺️ Location Coordinates")
     latitude = st.number_input(
         "Latitude",
@@ -61,21 +104,21 @@ with col1:
         max_value=90.0,
         value=24.8138,
         step=0.0001,
-        format="%.4f"
+        format="%.4f",
     )
-    
+
     longitude = st.number_input(
         "Longitude",
         min_value=-180.0,
         max_value=180.0,
         value=67.0011,
         step=0.0001,
-        format="%.4f"
+        format="%.4f",
     )
 
 with col2:
     st.subheader("🍽️ Services & Amenities")
-    
+
     # Service options
     st.markdown("**Service Options:**")
     col2_1, col2_2 = st.columns(2)
@@ -85,7 +128,7 @@ with col2:
     with col2_2:
         delivery = st.checkbox("Delivery", value=False)
         reservable = st.checkbox("Reservable", value=True)
-    
+
     # Meal services
     st.markdown("**Meal Services:**")
     col3_1, col3_2, col3_3 = st.columns(3)
@@ -97,7 +140,7 @@ with col2:
         serves_coffee = st.checkbox("Coffee", value=False)
     with col3_3:
         serves_dessert = st.checkbox("Dessert", value=True)
-    
+
     # Amenities
     st.markdown("**Amenities:**")
     col4_1, col4_2, col4_3 = st.columns(3)
@@ -111,7 +154,7 @@ with col2:
         good_for_watching_sports = st.checkbox("Sports Viewing", value=False)
     with col4_3:
         wheelchair_accessible = st.checkbox("Wheelchair Accessible", value=True)
-    
+
     # Parking
     st.markdown("**Parking:**")
     col5_1, col5_2 = st.columns(2)
@@ -119,7 +162,7 @@ with col2:
         parking_free_lot = st.checkbox("Free Parking Lot", value=False)
     with col5_2:
         parking_free_street = st.checkbox("Free Street Parking", value=True)
-    
+
     # Payment
     st.markdown("**Payment Options:**")
     col6_1, col6_2 = st.columns(2)
@@ -127,7 +170,7 @@ with col2:
         accepts_debit_cards = st.checkbox("Accepts Debit Cards", value=True)
     with col6_2:
         accepts_cash_only = st.checkbox("Cash Only", value=False)
-    
+
     # Operating hours
     st.markdown("**Operating Hours:**")
     col7_1, col7_2, col7_3 = st.columns(3)
@@ -170,56 +213,52 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
         "wheelchair_accessible": wheelchair_accessible,
         "is_open_24_7": is_open_24_7,
         "open_after_midnight": open_after_midnight,
-        "is_closed_any_day": is_closed_any_day
+        "is_closed_any_day": is_closed_any_day,
     }
-    
+
     # Show loading spinner
     with st.spinner("🔄 Predicting rating..."):
         try:
             # Make API request
             response = requests.post(API_URL, json=restaurant_data, timeout=10)
-            
+
             if response.status_code == 200:
                 result = response.json()
-                
+
                 # Display result in a nice format
                 st.success("✅ Prediction Successful!")
-                
+
                 # Create metrics display
                 col_res1, col_res2, col_res3 = st.columns(3)
-                
+
                 with col_res1:
                     st.metric(
                         label="Predicted Rating",
-                        value=f"⭐ {result['predicted_rating']}/5"
+                        value=f"⭐ {result['predicted_rating']}/5",
                     )
-                
+
                 with col_res2:
-                    st.metric(
-                        label="Model Version",
-                        value=result['model_version']
-                    )
-                
+                    st.metric(label="Model Version", value=result["model_version"])
+
                 with col_res3:
-                    st.metric(
-                        label="Rating Scale",
-                        value=result['rating_scale']
-                    )
-                
+                    st.metric(label="Rating Scale", value=result["rating_scale"])
+
                 # Show input summary
                 with st.expander("📋 Input Summary"):
-                    st.json(result['input_features'])
-                
+                    st.json(result["input_features"])
+
                 # Show full response
                 with st.expander("🔍 Full Response Details"):
                     st.json(result)
-                    
+
             else:
                 st.error(f"❌ Error: {response.status_code}")
                 st.code(response.text)
-                
+
         except requests.exceptions.ConnectionError:
-            st.error("❌ Failed to connect to the API. Make sure the FastAPI server is running.")
+            st.error(
+                "❌ Failed to connect to the API. Make sure the FastAPI server is running."
+            )
         except requests.exceptions.Timeout:
             st.error("❌ Request timeout. The API is taking too long to respond.")
         except Exception as e:
@@ -228,7 +267,8 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
 # Sidebar with additional info
 with st.sidebar:
     st.header("ℹ️ About")
-    st.markdown("""
+    st.markdown(
+        """
     This application predicts restaurant ratings in Karachi based on various features including:
     - Location and area
     - Price level
@@ -244,20 +284,23 @@ with st.sidebar:
     - Streamlit (Frontend)
     - MLflow (Model Management)
     - Docker (Containerization)
-    """)
-    
+    """
+    )
+
     st.markdown("---")
-    
+
     st.header("📖 Quick Tips")
-    st.markdown("""
+    st.markdown(
+        """
     - Fill in all the fields accurately
     - Coordinates should be in Karachi area (approximately lat: 24.8, lon: 67.0)
     - Price levels range from inexpensive to very expensive
     - Check amenities that your restaurant offers
-    """)
-    
+    """
+    )
+
     st.markdown("---")
-    
+
     # API Health Check
     st.header("🏥 API Status")
     if st.button("Check API Health"):

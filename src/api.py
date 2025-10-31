@@ -1,4 +1,5 @@
 # src/api.py
+<<<<<<< HEAD
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import mlflow
@@ -19,17 +20,38 @@ mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 # Model Registry Configuration
 MODEL_NAME = "Restaurant_rating_prediction_regression"
 MODEL_VERSION = "1"
+=======
+from pathlib import Path
+from typing import Literal
+
+import mlflow.pyfunc
+import pandas as pd
+import pydantic
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
+from pydantic import BaseModel, Field
+>>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
 
 # Initialize FastAPI
 app = FastAPI(
     title="Taste Karachi - Restaurant Rating Predictor",
     description="Predict restaurant ratings in Karachi based on features",
-    version="1.0.0"
+    version="1.0.0",
 )
 
+<<<<<<< HEAD
 # Global model variable
+=======
+# Initialize Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app)
+
+# Load model at startup
+MODEL_PATH = Path(__file__).parent.parent / "models"
+>>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
 model = None
 model_info = {}
+
 
 @app.on_event("startup")
 async def load_model():
@@ -56,12 +78,22 @@ async def load_model():
         print(f"   Version: {MODEL_VERSION}")
 
     except Exception as e:
+<<<<<<< HEAD
         print(f"❌ Error loading model from registry: {e}")
         print(f"   Make sure:")
         print(f"   1. MLflow server is running at {MLFLOW_TRACKING_URI}")
         print(f"   2. Model '{MODEL_NAME}' exists in the registry")
         print(f"   3. Version '{MODEL_VERSION}' exists")
         raise e
+=======
+        print(f"⚠️ Warning: Model not loaded: {e}")
+        print(
+            "ℹ️ API will start but prediction endpoint will return 503 until model is available"
+        )
+        print("ℹ️ To train model, run: notebooks/train.ipynb")
+        model = None
+        # Don't raise - allow API to start for testing purposes
+>>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
 
 
 # Define input schema matching your features
@@ -70,8 +102,14 @@ class RestaurantFeatures(BaseModel):
 
     # Categorical features
     area: str = Field(..., description="Restaurant area/location in Karachi")
-    price_level: str = Field(..., description="Price level (e.g., PRICE_LEVEL_MODERATE, PRICE_LEVEL_INEXPENSIVE, PRICE_LEVEL_EXPENSIVE, PRICE_LEVEL_VERY_EXPENSIVE)")
-    category: str = Field(..., description="Restaurant category/type (e.g., Restaurant, Fast Food Restaurant, Cafe, etc.)")
+    price_level: str = Field(
+        ...,
+        description="Price level (e.g., PRICE_LEVEL_MODERATE, PRICE_LEVEL_INEXPENSIVE, PRICE_LEVEL_EXPENSIVE, PRICE_LEVEL_VERY_EXPENSIVE)",
+    )
+    category: str = Field(
+        ...,
+        description="Restaurant category/type (e.g., Restaurant, Fast Food Restaurant, Cafe, etc.)",
+    )
 
     # Numeric features
     latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
@@ -144,7 +182,7 @@ class RestaurantFeatures(BaseModel):
                 "wheelchair_accessible": True,
                 "is_open_24_7": False,
                 "open_after_midnight": False,
-                "is_closed_any_day": False
+                "is_closed_any_day": False,
             }
         }
 
@@ -164,8 +202,8 @@ def root():
             "predict": "/predict - Make predictions",
             "model_info": "/model-info - Get model details",
             "docs": "/docs - Interactive API documentation",
-            "openapi": "/openapi.json - OpenAPI specification"
-        }
+            "openapi": "/openapi.json - OpenAPI specification",
+        },
     }
 
 
@@ -176,6 +214,7 @@ def health_check():
     return {
         "status": "healthy",
         "model_loaded": model is not None,
+<<<<<<< HEAD
         "model_info": model_info
     }
 
@@ -195,6 +234,10 @@ def get_model_info():
         "model_version": model_info.get("version"),
         "model_uri": model_info.get("uri"),
         "mlflow_tracking_uri": MLFLOW_TRACKING_URI
+=======
+        "model_name": "Restaurant_rating_prediction_regression",
+        "version": "v1",
+>>>>>>> dc4fa2eb7890e5828d81559753796cddb0e86f62
     }
 
 
@@ -208,14 +251,13 @@ def predict_rating(features: RestaurantFeatures):
     """
     if model is None:
         raise HTTPException(
-            status_code=503,
-            detail="Model not loaded. Service unavailable."
+            status_code=503, detail="Model not loaded. Service unavailable."
         )
 
     try:
         # Convert Pydantic model to dict then DataFrame
         # Handle both Pydantic v1 and v2
-        if hasattr(features, 'model_dump'):
+        if hasattr(features, "model_dump"):
             input_dict = features.model_dump()  # Pydantic v2
         else:
             input_dict = features.dict()  # Pydantic v1
@@ -237,22 +279,14 @@ def predict_rating(features: RestaurantFeatures):
             "input_features": {
                 "area": features.area,
                 "price_level": features.price_level,
-                "category": features.category
-            }
+                "category": features.category,
+            },
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Prediction error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 
 # Run with uvicorn if called directly
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

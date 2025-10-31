@@ -1,9 +1,12 @@
 # test_prediction.py
-import requests
 import json
+import os
 
-# API endpoint
-url = "http://54.196.196.185:8000/predict"
+import requests
+
+# API endpoint - use environment variable or default to localhost
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+url = f"{API_BASE_URL}/predict"
 
 # Sample restaurant data
 restaurant_data = {
@@ -34,13 +37,15 @@ restaurant_data = {
     "wheelchair_accessible": False,
     "is_open_24_7": False,
     "open_after_midnight": False,
-    "is_closed_any_day": False
+    "is_closed_any_day": False,
 }
 
 # Make request
 print("🚀 Testing prediction endpoint...")
 print(f"📍 URL: {url}")
-print(f"📦 Input: {restaurant_data['area']}, {restaurant_data['category']}, {restaurant_data['price_level']}\n")
+print(
+    f"📦 Input: {restaurant_data['area']}, {restaurant_data['category']}, {restaurant_data['price_level']}\n"
+)
 
 try:
     response = requests.post(url, json=restaurant_data)
