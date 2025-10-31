@@ -1,8 +1,7 @@
 
 
-<p align="center">
-  <img src="images/logo.svg" alt="Taste Karachi Logo" width="180" height="180" />
-</p>
+
+<img src="images/logo.svg" alt="Taste Karachi Logo" width="300" height="300" />
 
 
 #
