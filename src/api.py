@@ -1,12 +1,24 @@
 # src/api.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+import mlflow
 import mlflow.pyfunc
 import pandas as pd
 from pathlib import Path
 import uvicorn
 from typing import Literal
-import pydantic
+import os
+
+# ============================================
+# MLflow Configuration
+# ============================================
+# Set MLflow tracking URI to your server
+MLFLOW_TRACKING_URI = "http://54.196.196.185:5000"
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+
+# Model Registry Configuration
+MODEL_NAME = "Restaurant_rating_prediction_regression"
+MODEL_VERSION = "1"
 
 # Initialize FastAPI
 app = FastAPI(
@@ -15,19 +27,40 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Load model at startup
-MODEL_PATH = Path(__file__).parent.parent / "models"
+# Global model variable
 model = None
+model_info = {}
 
 @app.on_event("startup")
 async def load_model():
-    """Load ML model on startup"""
-    global model
+    """Load ML model from MLflow Model Registry on startup"""
+    global model, model_info
     try:
-        model = mlflow.pyfunc.load_model(str(MODEL_PATH))
-        print("✅ Model loaded successfully!")
+        # Load model from MLflow Model Registry
+        model_uri = f"models:/{MODEL_NAME}/{MODEL_VERSION}"
+
+        print(f"Loading model from MLflow Registry...")
+        print(f"Model URI: {model_uri}")
+
+        model = mlflow.pyfunc.load_model(model_uri)
+
+        # Store model info
+        model_info = {
+            "name": MODEL_NAME,
+            "version": MODEL_VERSION,
+            "uri": model_uri
+        }
+
+        print(f"✅ Model loaded successfully from registry!")
+        print(f"   Model: {MODEL_NAME}")
+        print(f"   Version: {MODEL_VERSION}")
+
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
+        print(f"❌ Error loading model from registry: {e}")
+        print(f"   Make sure:")
+        print(f"   1. MLflow server is running at {MLFLOW_TRACKING_URI}")
+        print(f"   2. Model '{MODEL_NAME}' exists in the registry")
+        print(f"   3. Version '{MODEL_VERSION}' exists")
         raise e
 
 
@@ -86,7 +119,7 @@ class RestaurantFeatures(BaseModel):
             "example": {
                 "area": "Clifton",
                 "price_level": "PRICE_LEVEL_MODERATE",
-                "category": "Pakistani",
+                "category": "Restaurant",
                 "latitude": 24.8138,
                 "longitude": 67.0011,
                 "dine_in": True,
@@ -124,10 +157,12 @@ def root():
         "message": "Welcome to Taste Karachi Restaurant Rating Prediction API",
         "description": "Predict restaurant ratings based on features",
         "version": "1.0.0",
-        "model": "Restaurant_rating_prediction_regression v1",
+        "model": model_info,
+        "mlflow_server": MLFLOW_TRACKING_URI,
         "endpoints": {
             "health": "/health - Health check",
             "predict": "/predict - Make predictions",
+            "model_info": "/model-info - Get model details",
             "docs": "/docs - Interactive API documentation",
             "openapi": "/openapi.json - OpenAPI specification"
         }
@@ -141,8 +176,25 @@ def health_check():
     return {
         "status": "healthy",
         "model_loaded": model is not None,
-        "model_name": "Restaurant_rating_prediction_regression",
-        "version": "v1"
+        "model_info": model_info
+    }
+
+
+# New endpoint: Model info
+@app.get("/model-info")
+def get_model_info():
+    """Get information about the loaded model"""
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Model not loaded"
+        )
+
+    return {
+        "model_name": model_info.get("name"),
+        "model_version": model_info.get("version"),
+        "model_uri": model_info.get("uri"),
+        "mlflow_tracking_uri": MLFLOW_TRACKING_URI
     }
 
 
@@ -180,8 +232,8 @@ def predict_rating(features: RestaurantFeatures):
         return {
             "predicted_rating": round(predicted_rating, 2),
             "rating_scale": "0-5",
-            "model_version": "v1",
-            "model_name": "Restaurant_rating_prediction_regression",
+            "model_name": model_info.get("name"),
+            "model_version": model_info.get("version"),
             "input_features": {
                 "area": features.area,
                 "price_level": features.price_level,
