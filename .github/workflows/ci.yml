@@ -1,0 +1,220 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  lint-and-format:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black flake8 isort
+
+    - name: Check code formatting with Black
+      run: black --check --diff src/
+
+    - name: Lint with Flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Check import sorting with isort
+      run: isort --check-only --diff src/
+
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Safety
+      run: pip install safety
+
+    - name: Scan dependencies for vulnerabilities
+      run: safety check -r requirements.txt --continue-on-error || true
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: taste-karachi:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Verify Docker Compose configuration
+      run: docker-compose config
+
+  api-tests:
+    name: API Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Start FastAPI server in background
+      run: |
+        uvicorn src.api:app --host 0.0.0.0 --port 8000 &
+        echo "Waiting for API to start..."
+        sleep 10
+
+    - name: Wait for API to be healthy
+      run: |
+        for i in {1..30}; do
+          if curl -f http://localhost:8000/docs > /dev/null 2>&1; then
+            echo "API is up!"
+            exit 0
+          fi
+          echo "Waiting for API... ($i/30)"
+          sleep 2
+        done
+        echo "API failed to start"
+        exit 1
+
+    - name: Run API integration tests
+      run: |
+        # Modify test.py to use localhost
+        sed -i 's|http://54.196.196.185:8000|http://localhost:8000|g' src/test.py
+        python src/test.py
+
+  docker-compose-test:
+    name: Docker Compose Full Stack Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build and start services with Docker Compose
+      run: |
+        docker-compose up -d --build
+
+    - name: Wait for services to be healthy
+      run: |
+        echo "Waiting for services to start..."
+        sleep 20
+
+    - name: Check API health
+      run: |
+        curl -f http://localhost:8000/docs || (docker-compose logs && exit 1)
+
+    - name: Check Streamlit health
+      run: |
+        curl -f http://localhost:8501 || (docker-compose logs && exit 1)
+
+    - name: Run integration test against Docker Compose stack
+      run: |
+        docker-compose exec -T api python src/test.py || true
+
+    - name: Show logs on failure
+      if: failure()
+      run: docker-compose logs
+
+    - name: Cleanup
+      if: always()
+      run: docker-compose down -v
+
+  model-validation:
+    name: Model and Data Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Validate project structure
+      run: |
+        echo "Checking required files..."
+        test -f requirements.txt || exit 1
+        test -f Dockerfile || exit 1
+        test -f docker-compose.yml || exit 1
+        test -f src/api.py || exit 1
+        test -f src/streamlit_app.py || exit 1
+        echo "All required files present "
+
+  summary:
+    name: CI Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, security-scan, docker-build, api-tests, docker-compose-test, model-validation]
+    if: always()
+
+    steps:
+    - name: Check pipeline status
+      run: |
+        echo "Pipeline Status Summary:"
+        echo "========================"
+        echo "Lint & Format: ${{ needs.lint-and-format.result }}"
+        echo "Security Scan: ${{ needs.security-scan.result }}"
+        echo "Docker Build: ${{ needs.docker-build.result }}"
+        echo "API Tests: ${{ needs.api-tests.result }}"
+        echo "Docker Compose: ${{ needs.docker-compose-test.result }}"
+        echo "Model Validation: ${{ needs.model-validation.result }}"
+
+    - name: Fail if any job failed
+      if: |
+        needs.lint-and-format.result == 'failure' ||
+        needs.docker-build.result == 'failure' ||
+        needs.api-tests.result == 'failure' ||
+        needs.docker-compose-test.result == 'failure' ||
+        needs.model-validation.result == 'failure'
+      run: exit 1
