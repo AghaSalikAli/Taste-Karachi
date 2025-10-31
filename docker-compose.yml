@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend Service
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taste-karachi-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./models:/app/models
+      - ./src:/app/src
+    networks:
+      - taste-karachi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Streamlit Frontend Service
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taste-karachi-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      - fastapi
+    networks:
+      - taste-karachi-network
+    command: streamlit run src/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+
+networks:
+  taste-karachi-network:
+    driver: bridge
