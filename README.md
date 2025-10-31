@@ -1,10 +1,7 @@
-
-
-
 <img src="images/logo.svg" alt="Taste Karachi Logo" width="300" height="300" />
 
-
 #
+
 # Taste Karachi
 
 MLOps project that predicts restaurant ratings in Karachi (0-5 scale) based on 30+ features including location, amenities, services, and operational characteristics.
@@ -15,23 +12,25 @@ Try the application on our public instance:
 
 ### Available Services
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| 🎨 **Streamlit UI** | http://54.196.196.185:8501 | Interactive web interface for predictions |
-| 🔌 **FastAPI** | http://54.196.196.185:8000 | REST API backend |
-| 📚 **API Docs** | http://54.196.196.185:8000/docs | Interactive API documentation |
-| 📊 **Prometheus** | http://54.196.196.185:9090 | Metrics collection |
-| 📈 **Grafana** | http://54.196.196.185:3000 | Monitoring dashboards (admin/admin) |
-| 📉 **Metrics** | http://54.196.196.185:8000/metrics | Prometheus metrics endpoint |
+| Service             | URL                                | Description                               |
+| ------------------- | ---------------------------------- | ----------------------------------------- |
+| 🎨 **Streamlit UI** | http://54.196.196.185:8501         | Interactive web interface for predictions |
+| 🔌 **FastAPI**      | http://54.196.196.185:8000         | REST API backend                          |
+| 📚 **API Docs**     | http://54.196.196.185:8000/docs    | Interactive API documentation             |
+| 📊 **Prometheus**   | http://54.196.196.185:9090         | Metrics collection                        |
+| 📈 **Grafana**      | http://54.196.196.185:3000         | Monitoring dashboards (admin/admin)       |
+| 📉 **Metrics**      | http://54.196.196.185:8000/metrics | Prometheus metrics endpoint               |
 
 ### Quick API Test
 
 **Health Check:**
+
 ```bash
 curl http://54.196.196.185:8000/health
 ```
 
 **Make a Prediction:**
+
 ```bash
 curl -X POST "http://54.196.196.185:8000/predict" \
   -H "Content-Type: application/json" \
@@ -68,6 +67,7 @@ curl -X POST "http://54.196.196.185:8000/predict" \
 ```
 
 **Response:**
+
 ```json
 {
   "predicted_rating": 4.25,
@@ -85,6 +85,7 @@ curl -X POST "http://54.196.196.185:8000/predict" \
 ### Using the Streamlit Interface
 
 For a user-friendly experience, visit the **Streamlit UI** at http://54.196.196.185:8501:
+
 1. Fill in restaurant details (location, amenities, services)
 2. Click **"Predict Rating"**
 3. View the predicted rating and detailed metrics
@@ -98,6 +99,7 @@ docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
 **Local Services:**
+
 - **Streamlit UI**: http://localhost:8501
 - **FastAPI API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
@@ -131,16 +133,19 @@ streamlit run src/streamlit_app.py
 ## 📈 Monitoring
 
 **Live Instance:**
+
 - **Grafana Dashboards**: http://54.196.196.185:3000 (admin/admin)
 - **Prometheus**: http://54.196.196.185:9090
 - **Metrics Endpoint**: http://54.196.196.185:8000/metrics
 
 **Local Development:**
+
 - **Grafana Dashboards**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
 - **Metrics Endpoint**: http://localhost:8000/metrics
 
 **Features:**
+
 - Pre-configured Grafana dashboard with request rates, latency, status codes
 - Prometheus scrapes FastAPI metrics every 10s
 - Real-time monitoring of API performance and health
@@ -148,6 +153,7 @@ streamlit run src/streamlit_app.py
 ## 🧪 API Testing
 
 **Test Live Instance:**
+
 ```bash
 # Health check
 curl http://54.196.196.185:8000/health
@@ -157,6 +163,7 @@ curl -X POST http://54.196.196.185:8000/predict -H "Content-Type: application/js
 ```
 
 **Test Local Instance:**
+
 ```bash
 # Health check
 curl http://localhost:8000/health
@@ -185,6 +192,7 @@ Taste-Karachi/
 **Prerequisites:** Python 3.10/3.11, Docker Desktop, Git, 2GB+ disk space
 
 **Virtual Environment:**
+
 ```bash
 # Windows
 python -m venv venv && .\venv\Scripts\Activate.ps1
@@ -197,11 +205,13 @@ pip install -r requirements.txt
 ```
 
 **Windows Execution Policy Error:**
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 **Docker WSL Error (Windows):**
+
 ```powershell
 wsl --install && wsl --set-default-version 2
 ```
@@ -209,6 +219,7 @@ wsl --install && wsl --set-default-version 2
 ### Common Issues
 
 **Port Already in Use:**
+
 ```bash
 # Windows
 netstat -ano | findstr :8000
@@ -224,11 +235,13 @@ kill -9 <PID>
 **Container OOM (Exit 137):** Increase Docker memory to 4GB+ (Settings > Resources)
 
 **Grafana Dashboard No Data:**
+
 1. Check datasource: http://localhost:3000
 2. Verify Prometheus: http://localhost:9090
 3. Test metrics: http://localhost:8000/metrics
 
 **Clean Reset:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml down -v
 docker-compose -f docker-compose.dev.yml build --no-cache
@@ -238,6 +251,7 @@ docker-compose -f docker-compose.dev.yml up -d
 ### Debugging
 
 **View Logs:**
+
 ```bash
 # All services
 docker-compose -f docker-compose.dev.yml logs -f
@@ -247,6 +261,7 @@ docker logs taste-karachi-api-dev
 ```
 
 **Container Shell:**
+
 ```bash
 docker exec -it taste-karachi-api-dev bash
 ```
@@ -263,3 +278,5 @@ docker exec -it taste-karachi-api-dev bash
 Below is a high-level architecture of the Taste Karachi MLOps pipeline:
 
 ![alt text](images/flowchart.svg)
+
+###
