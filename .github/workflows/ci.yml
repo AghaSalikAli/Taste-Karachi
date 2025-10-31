@@ -32,9 +32,7 @@ jobs:
 
     - name: Lint with Flake8
       run: |
-        # Stop the build if there are Python syntax errors or undefined names
         flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
         flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Check import sorting with isort
@@ -122,7 +120,6 @@ jobs:
 
     - name: Run API integration tests
       run: |
-        # Modify test.py to use localhost
         sed -i 's|http://54.196.196.185:8000|http://localhost:8000|g' src/test.py
         python src/test.py
 
@@ -190,7 +187,7 @@ jobs:
         test -f docker-compose.yml || exit 1
         test -f src/api.py || exit 1
         test -f src/streamlit_app.py || exit 1
-        echo "All required files present "
+        echo "All required files present"
 
   summary:
     name: CI Pipeline Summary
