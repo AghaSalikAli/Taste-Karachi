@@ -1,23 +1,25 @@
 # src/api.py
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pathlib import Path
+from typing import Literal
+
 import mlflow.pyfunc
 import pandas as pd
-from pathlib import Path
-import uvicorn
-from typing import Literal
 import pydantic
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 # Initialize FastAPI
 app = FastAPI(
     title="Taste Karachi - Restaurant Rating Predictor",
     description="Predict restaurant ratings in Karachi based on features",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Load model at startup
 MODEL_PATH = Path(__file__).parent.parent / "models"
 model = None
+
 
 @app.on_event("startup")
 async def load_model():
@@ -27,8 +29,13 @@ async def load_model():
         model = mlflow.pyfunc.load_model(str(MODEL_PATH))
         print("✅ Model loaded successfully!")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        raise e
+        print(f"⚠️ Warning: Model not loaded: {e}")
+        print(
+            "ℹ️ API will start but prediction endpoint will return 503 until model is available"
+        )
+        print("ℹ️ To train model, run: notebooks/train.ipynb")
+        model = None
+        # Don't raise - allow API to start for testing purposes
 
 
 # Define input schema matching your features
@@ -37,8 +44,14 @@ class RestaurantFeatures(BaseModel):
 
     # Categorical features
     area: str = Field(..., description="Restaurant area/location in Karachi")
-    price_level: str = Field(..., description="Price level (e.g., PRICE_LEVEL_MODERATE, PRICE_LEVEL_INEXPENSIVE, PRICE_LEVEL_EXPENSIVE, PRICE_LEVEL_VERY_EXPENSIVE)")
-    category: str = Field(..., description="Restaurant category/type (e.g., Restaurant, Fast Food Restaurant, Cafe, etc.)")
+    price_level: str = Field(
+        ...,
+        description="Price level (e.g., PRICE_LEVEL_MODERATE, PRICE_LEVEL_INEXPENSIVE, PRICE_LEVEL_EXPENSIVE, PRICE_LEVEL_VERY_EXPENSIVE)",
+    )
+    category: str = Field(
+        ...,
+        description="Restaurant category/type (e.g., Restaurant, Fast Food Restaurant, Cafe, etc.)",
+    )
 
     # Numeric features
     latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
@@ -111,7 +124,7 @@ class RestaurantFeatures(BaseModel):
                 "wheelchair_accessible": True,
                 "is_open_24_7": False,
                 "open_after_midnight": False,
-                "is_closed_any_day": False
+                "is_closed_any_day": False,
             }
         }
 
@@ -129,8 +142,8 @@ def root():
             "health": "/health - Health check",
             "predict": "/predict - Make predictions",
             "docs": "/docs - Interactive API documentation",
-            "openapi": "/openapi.json - OpenAPI specification"
-        }
+            "openapi": "/openapi.json - OpenAPI specification",
+        },
     }
 
 
@@ -142,7 +155,7 @@ def health_check():
         "status": "healthy",
         "model_loaded": model is not None,
         "model_name": "Restaurant_rating_prediction_regression",
-        "version": "v1"
+        "version": "v1",
     }
 
 
@@ -156,14 +169,13 @@ def predict_rating(features: RestaurantFeatures):
     """
     if model is None:
         raise HTTPException(
-            status_code=503,
-            detail="Model not loaded. Service unavailable."
+            status_code=503, detail="Model not loaded. Service unavailable."
         )
 
     try:
         # Convert Pydantic model to dict then DataFrame
         # Handle both Pydantic v1 and v2
-        if hasattr(features, 'model_dump'):
+        if hasattr(features, "model_dump"):
             input_dict = features.model_dump()  # Pydantic v2
         else:
             input_dict = features.dict()  # Pydantic v1
@@ -185,22 +197,14 @@ def predict_rating(features: RestaurantFeatures):
             "input_features": {
                 "area": features.area,
                 "price_level": features.price_level,
-                "category": features.category
-            }
+                "category": features.category,
+            },
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Prediction error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 
 # Run with uvicorn if called directly
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

@@ -99,17 +99,40 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Check if model exists
+      id: check_model
+      run: |
+        if [ -f "models/model.pkl" ]; then
+          echo "model_exists=true" >> $GITHUB_OUTPUT
+          echo "✅ Model found - will run full tests"
+        else
+          echo "model_exists=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Model not found - will skip prediction tests"
+          echo "ℹ️ To include model: Train model using notebooks/train.ipynb"
+        fi
+
+    - name: Test API structure (no model required)
+      run: |
+        # Test that API module can be imported
+        python -c "from src.api import app; print('✅ API module imports successfully')"
+
+        # Verify Pydantic schema is valid
+        python -c "from src.api import RestaurantFeatures; print('✅ Schema validation successful')"
+
     - name: Start FastAPI server in background
+      if: steps.check_model.outputs.model_exists == 'true'
       run: |
         uvicorn src.api:app --host 0.0.0.0 --port 8000 &
         echo "Waiting for API to start..."
         sleep 10
 
     - name: Wait for API to be healthy
+      if: steps.check_model.outputs.model_exists == 'true'
       run: |
         for i in {1..30}; do
-          if curl -f http://localhost:8000/docs > /dev/null 2>&1; then
-            echo "API is up!"
+          if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+            echo "API is up and healthy!"
+            curl http://localhost:8000/health
             exit 0
           fi
           echo "Waiting for API... ($i/30)"
@@ -119,9 +142,11 @@ jobs:
         exit 1
 
     - name: Run API integration tests
+      if: steps.check_model.outputs.model_exists == 'true'
       run: |
-        sed -i 's|http://54.196.196.185:8000|http://localhost:8000|g' src/test.py
         python src/test.py
+      env:
+        API_BASE_URL: http://localhost:8000
 
   docker-compose-test:
     name: Docker Compose Full Stack Test
@@ -130,6 +155,17 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Check if model exists
+      id: check_model
+      run: |
+        if [ -f "models/model.pkl" ]; then
+          echo "model_exists=true" >> $GITHUB_OUTPUT
+          echo "✅ Model found - will test full stack"
+        else
+          echo "model_exists=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Model not found - will test Docker build only"
+        fi
 
     - name: Build and start services with Docker Compose
       run: |
@@ -140,17 +176,35 @@ jobs:
         echo "Waiting for services to start..."
         sleep 20
 
-    - name: Check API health
+    - name: Check API responds (structure test)
       run: |
-        curl -f http://localhost:8000/docs || (docker-compose logs && exit 1)
+        echo "Testing if API is accessible..."
+        curl -f http://localhost:8000/ || (docker-compose logs fastapi && exit 1)
+        echo "✅ API root endpoint accessible"
+
+    - name: Check API health endpoint
+      if: steps.check_model.outputs.model_exists == 'true'
+      run: |
+        echo "Testing API health with model..."
+        curl -f http://localhost:8000/health || (docker-compose logs fastapi && exit 1)
+        echo "✅ API health check passed"
+
+    - name: Check API docs endpoint
+      run: |
+        echo "Testing API documentation..."
+        curl -f http://localhost:8000/docs || (docker-compose logs fastapi && exit 1)
+        echo "✅ API docs accessible"
 
     - name: Check Streamlit health
       run: |
-        curl -f http://localhost:8501 || (docker-compose logs && exit 1)
+        echo "Testing Streamlit frontend..."
+        curl -f http://localhost:8501 || (docker-compose logs streamlit && exit 1)
+        echo "✅ Streamlit frontend accessible"
 
     - name: Run integration test against Docker Compose stack
+      if: steps.check_model.outputs.model_exists == 'true'
       run: |
-        docker-compose exec -T api python src/test.py || true
+        docker-compose exec -T fastapi python src/test.py || true
 
     - name: Show logs on failure
       if: failure()
