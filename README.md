@@ -12,38 +12,36 @@ Try the application on our public instance:
 
 ### Available Services
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| 🎨 **Streamlit UI** | http://54.196.196.185:8501 | Interactive web interface for predictions |
-| 🔌 **FastAPI** | http://54.196.196.185:8000 | REST API backend |
-| 📚 **API Docs** | http://54.196.196.185:8000/docs | Interactive API documentation |
-| 📊 **Prometheus** | http://54.196.196.185:9090 | Metrics collection |
-| 📈 **Grafana** | http://54.196.196.185:3000 | Monitoring dashboards (admin/admin) |
-| 📉 **Metrics** | http://54.196.196.185:8000/metrics | Prometheus metrics endpoint |
-| 👩‍💻 **MLFlow Server** | http://54.196.196.185:5000/ | Model experiments | 
-
+| Service              | URL                                | Description                               |
+| -------------------- | ---------------------------------- | ----------------------------------------- |
+| 🎨 **Streamlit UI**  | http://54.226.237.246:8501         | Interactive web interface for predictions |
+| 🔌 **FastAPI**       | http://54.226.237.246:8000         | REST API backend                          |
+| 📚 **API Docs**      | http://54.226.237.246:8000/docs    | Interactive API documentation             |
+| 📊 **Prometheus**    | http://54.226.237.246:9090         | Metrics collection                        |
+| 📈 **Grafana**       | http://54.226.237.246:3000         | Monitoring dashboards (admin/admin)       |
+| 📉 **Metrics**       | http://54.226.237.246:8000/metrics | Prometheus metrics endpoint               |
+| 👩‍💻 **MLFlow Server** | http://54.226.237.246:5000/        | Model experiments                         |
 
 ## ☁️ Cloud Services Used
 
 This project leverages several AWS cloud services for deployment, storage, and monitoring:
 
-- **AWS EC2 (t3.micro)**: Hosts the application services including FastAPI, Streamlit, Prometheus, and Grafana. 
+- **AWS EC2 (t3.micro)**: Hosts the application services including FastAPI, Streamlit, Prometheus, and Grafana.
 - **AWS S3**: Used for storing trained machine learning models, enabling easy access and versioning for model artifacts.
 - **AWS CloudWatch**: Provides monitoring and logging for the deployed services, including resource usage and application logs.
-
 
 ### Quick API Test
 
 **Health Check:**
 
 ```bash
-curl http://54.196.196.185:8000/health
+curl http://54.226.237.246:8000/health
 ```
 
 **Make a Prediction:**
 
 ```bash
-curl -X POST "http://54.196.196.185:8000/predict" \
+curl -X POST "http://54.226.237.246:8000/predict" \
   -H "Content-Type: application/json" \
   -d '{
     "area": "Clifton",
@@ -95,7 +93,7 @@ curl -X POST "http://54.196.196.185:8000/predict" \
 
 ### Using the Streamlit Interface
 
-For a user-friendly experience, visit the **Streamlit UI** at http://54.196.196.185:8501:
+For a user-friendly experience, visit the **Streamlit UI** at http://54.226.237.246:8501:
 
 1. Fill in restaurant details (location, amenities, services)
 2. Click **"Predict Rating"**
@@ -143,9 +141,9 @@ streamlit run src/streamlit_app.py
 
 **Live Instance:**
 
-- **Grafana Dashboards**: http://54.196.196.185:3000 (admin/admin)
-- **Prometheus**: http://54.196.196.185:9090
-- **Metrics Endpoint**: http://54.196.196.185:8000/metrics
+- **Grafana Dashboards**: http://54.226.237.246:3000 (admin/admin)
+- **Prometheus**: http://54.226.237.246:9090
+- **Metrics Endpoint**: http://54.226.237.246:8000/metrics
 
 **Local Development:**
 
@@ -165,10 +163,10 @@ streamlit run src/streamlit_app.py
 
 ```bash
 # Health check
-curl http://54.196.196.185:8000/health
+curl http://54.226.237.246:8000/health
 
 # Make prediction (see full example above in Live Demo section)
-curl -X POST http://54.196.196.185:8000/predict -H "Content-Type: application/json" -d '{...}'
+curl -X POST http://54.226.237.246:8000/predict -H "Content-Type: application/json" -d '{...}'
 ```
 
 **Test Local Instance:**
@@ -280,4 +278,3 @@ docker exec -it taste-karachi-api-dev bash
 Below is a high-level architecture of the Taste Karachi MLOps pipeline:
 
 ![alt text](images/flowchart.svg)
-

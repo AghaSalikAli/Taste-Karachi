@@ -16,7 +16,7 @@ import os
 # MLflow Configuration
 # ============================================
 # Set MLflow tracking URI to your server
-MLFLOW_TRACKING_URI = "http://54.196.196.185:5000"
+MLFLOW_TRACKING_URI = "http://54.226.237.246:5000"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 # Model Registry Configuration

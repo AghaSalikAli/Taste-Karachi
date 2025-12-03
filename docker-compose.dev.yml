@@ -13,7 +13,6 @@ services:
       - PYTHONUNBUFFERED=1
       - ENV=development
     volumes:
-      - ./models:/app/models
       - ./src:/app/src
     networks:
       - taste-karachi-network
