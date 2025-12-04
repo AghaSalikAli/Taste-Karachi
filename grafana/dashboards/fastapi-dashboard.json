@@ -37,7 +37,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -117,7 +117,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(rate(http_requests_total{job=\"fastapi\"}[5m])) by (handler)",
@@ -132,7 +132,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -183,7 +183,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(http_requests_total{job=\"fastapi\"})",
@@ -197,7 +197,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -249,7 +249,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le))",
@@ -263,7 +263,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -343,7 +343,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le, handler))",
@@ -354,7 +354,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le, handler))",
@@ -366,7 +366,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le, handler))",
@@ -382,7 +382,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -504,7 +504,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(rate(http_requests_total{job=\"fastapi\"}[5m])) by (status)",
@@ -532,7 +532,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -616,7 +616,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(rag_request_latency_seconds_bucket{job=\"fastapi\"}[5m])) by (le))",
@@ -627,7 +627,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(rag_request_latency_seconds_bucket{job=\"fastapi\"}[5m])) by (le))",
@@ -639,7 +639,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(rag_request_latency_seconds_bucket{job=\"fastapi\"}[5m])) by (le))",
@@ -655,7 +655,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -707,7 +707,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(rag_request_latency_seconds_bucket{job=\"fastapi\"}[5m])) by (le))",
@@ -721,7 +721,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -767,7 +767,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(rag_request_latency_seconds_count{job=\"fastapi\"})",
@@ -781,7 +781,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -888,7 +888,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "rate(llm_token_usage_total{job=\"fastapi\", type=\"input\"}[5m])",
@@ -899,7 +899,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "rate(llm_token_usage_total{job=\"fastapi\", type=\"output\"}[5m])",
@@ -915,7 +915,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -969,7 +969,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(llm_token_usage_total{job=\"fastapi\", type=\"input\"})",
@@ -984,7 +984,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -1038,7 +1038,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(llm_token_usage_total{job=\"fastapi\", type=\"output\"})",
@@ -1066,7 +1066,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -1142,7 +1142,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(rate(http_requests_total{job=\"fastapi\", handler=\"/predict\"}[5m]))",
@@ -1153,7 +1153,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(rate(http_requests_total{job=\"fastapi\", handler=\"/inference\"}[5m]))",
@@ -1165,7 +1165,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum(rate(http_requests_total{job=\"fastapi\", handler=\"/health\"}[5m]))",
@@ -1181,7 +1181,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "prometheus-final"
       },
       "fieldConfig": {
         "defaults": {
@@ -1230,7 +1230,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "prometheus-final"
           },
           "editorMode": "code",
           "expr": "sum by (handler) (http_requests_total{job=\"fastapi\", handler=~\"/predict|/inference|/health|/model-info\"})",
