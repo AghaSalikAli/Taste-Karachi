@@ -20,9 +20,16 @@ mlops/
 *.md
 Dockerfile
 docker-compose.yml
+docker-compose.dev.yml
+docker-compose.prod.yml
 .dockerignore
 *.log
 .DS_Store
 notebooks/
 tests/
 .pytest_cache
+data/
+chroma_db_data/
+
+# Keep RAG-data (needed for vector DB initialization)
+!RAG-data/

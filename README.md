@@ -4,7 +4,7 @@
 
 # Taste Karachi
 
-MLOps project that predicts restaurant ratings in Karachi (0-5 scale) based on 30+ features including location, amenities, services, and operational characteristics.
+MLOps project that predicts restaurant ratings in Karachi (0-5 scale) based on 20+ features including location, amenities, services, and operational characteristics.
 
 ## 🌐 Live Demo
 
@@ -27,7 +27,7 @@ Try the application on our public instance:
 This project leverages several AWS cloud services for deployment, storage, and monitoring:
 
 - **AWS EC2 (t3.micro)**: Hosts the application services including FastAPI, Streamlit, Prometheus, and Grafana.
-- **AWS S3**: Used for storing trained machine learning models, enabling easy access and versioning for model artifacts.
+- **AWS S3**: Used for storing trained machine learning models artefacts, enabling easy access and versioning.
 - **AWS CloudWatch**: Provides monitoring and logging for the deployed services, including resource usage and application logs.
 
 ### Quick API Test
@@ -124,19 +124,6 @@ docker-compose -f docker-compose.dev.yml up -d --build
 - **CI/CD**: Automated testing, linting, and security scans
 - **Production-Ready**: Separate dev/prod configurations
 
-## 💻 Local Development (Without Docker)
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Start FastAPI
-python src/api.py
-
-# Start Streamlit (in another terminal)
-streamlit run src/streamlit_app.py
-```
-
 ## 📈 Monitoring
 
 **Live Instance:**
@@ -196,19 +183,19 @@ Taste-Karachi/
 
 ### Setup & Installation
 
-**Prerequisites:** Python 3.10/3.11, Docker Desktop, Git, 2GB+ disk space
+**Prerequisites:** Docker Desktop, Git, 2GB+ disk space
 
-**Virtual Environment:**
+**Quick Start with Docker (Recommended):**
 
 ```bash
-# Windows
-python -m venv venv && .\venv\Scripts\Activate.ps1
+# 1. Clone the repository
+git clone <repo-url> && cd Taste-Karachi
 
-# Mac/Linux
-python3 -m venv venv && source venv/bin/activate
+# 2. Create .env file with your API key
+echo "GOOGLE_API_KEY=your_key_here" > .env
 
-# Install dependencies
-pip install -r requirements.txt
+# 3. Launch all services
+docker-compose -f docker-compose.dev.yml up --build
 ```
 
 **Windows Execution Policy Error:**

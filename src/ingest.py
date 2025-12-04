@@ -3,9 +3,9 @@ Data Ingestion Script for ChromaDB Vector Store
 Ingests restaurant reviews with metadata into a local ChromaDB instance.
 """
 
+import os
 import pandas as pd
 import chromadb
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 
@@ -71,8 +71,12 @@ def initialize_chromadb():
     """Initialize ChromaDB persistent client and collection."""
     print("\nInitializing ChromaDB...")
 
+    # Get DB path from environment variable (Docker) or default to local
+    db_path = os.getenv("CHROMA_DB_PATH", "./chroma_db_data")
+    print(f"Using ChromaDB path: {db_path}")
+
     # Create persistent client
-    client = chromadb.PersistentClient(path="./chroma_db_data")
+    client = chromadb.PersistentClient(path=db_path)
 
     # Get or create collection
     collection = client.get_or_create_collection(

@@ -198,8 +198,8 @@ class RAGEngine:
                 f"A client is opening a new {feature_desc}.\n"
                 f"Here are reviews from similar existing restaurants with matching features:\n"
                 f"---\n{reviews_text}\n---\n"
-                f"Based ONLY on these reviews, list 3 key success factors and 1 potential pitfall "
-                f"for the new owner. Be concise."
+                f"Based ONLY on these reviews, list key success factors and potential pitfalls to avoid. Return only the lists. "
+                f"for the new owner. Be clear and offer actionable advice."
             )
 
             response = self.llm.invoke([HumanMessage(content=prompt)])

@@ -1,7 +1,48 @@
 version: '3.8'
 
 services:
-# FastAPI Backend Service
+  # Initialization Container - Creates Vector DB on First Launch
+  init-container:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taste-karachi-init-dev
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CHROMA_DB_PATH=/app/chroma_db_data
+    volumes:
+      - chroma-db-volume:/app/chroma_db_data  # Named volume for vector DB
+      - chroma-cache-volume:/root/.cache/chroma  # Cache embedding models
+      - ./RAG-data:/app/RAG-data:ro           # Read-only mount of source data
+    networks:
+      - taste-karachi-network
+    command: >
+      sh -c "
+        echo '================================================';
+        echo 'Checking Vector DB Status...';
+        echo '================================================';
+        if [ -f /app/chroma_db_data/chroma.sqlite3 ]; then
+          echo '✓ Vector DB already exists - skipping initialization';
+          echo 'Checking embedding model cache...';
+          if [ -d /root/.cache/chroma/onnx_models ]; then
+            echo '✓ Embedding model already cached';
+          else
+            echo '✗ Embedding model not cached - warming up...';
+            python src/warmup_cache.py || echo '⚠️ Cache warmup failed';
+          fi;
+          exit 0;
+        else
+          echo '✗ Vector DB not found - initializing...';
+          python src/ingest.py || exit 1;
+          echo '✓ Vector DB initialization complete';
+          echo 'Warming up embedding model cache...';
+          python src/warmup_cache.py || echo '⚠️ Cache warmup failed';
+          exit 0;
+        fi;
+      "
+    restart: "no"  # Only runs once per docker-compose up
+
+  # FastAPI Backend Service
   fastapi:
     build:
       context: .
@@ -9,18 +50,22 @@ services:
     container_name: taste-karachi-api-dev
     ports:
       - "8000:8000"
-    env_file:             # <--- NEW: Loads your .env file
+    env_file:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
       - ENV=development
-      - CHROMA_DB_PATH=/app/chroma_db_data  # <--- NEW: Tells code where DB is
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}    # <--- NEW: Explicitly passes key
+      - CHROMA_DB_PATH=/app/chroma_db_data
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     volumes:
       - ./src:/app/src
-      - ./chroma_db_data:/app/chroma_db_data # <--- NEW: Maps local DB to container
+      - chroma-db-volume:/app/chroma_db_data  # ChromaDB needs write access for lock files
+      - chroma-cache-volume:/root/.cache/chroma  # Cache embedding models (shared with init-container)
     networks:
       - taste-karachi-network
+    depends_on:
+      init-container:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -42,12 +87,15 @@ services:
     volumes:
       - ./src:/app/src
     depends_on:
-      - fastapi
+      init-container:
+        condition: service_completed_successfully
+      fastapi:
+        condition: service_started
     networks:
       - taste-karachi-network
     command: streamlit run src/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
-    tty: true  # Allocate a pseudo-TTY for better terminal output
-    stdin_open: true  # Keep STDIN open
+    tty: true
+    stdin_open: true
 
   # Prometheus Service
   prometheus:
@@ -96,5 +144,7 @@ networks:
     driver: bridge
 
 volumes:
+  chroma-db-volume:      # Named volume for ChromaDB - persists between restarts
+  chroma-cache-volume:   # Named volume for ChromaDB embedding models cache
   prometheus-data:
   grafana-data:
