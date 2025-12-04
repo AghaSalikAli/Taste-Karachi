@@ -84,10 +84,18 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Create .env file for Docker Compose
+      run: |
+        echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
+        echo "GRAFANA_ADMIN_USER=admin" >> .env
+        echo "GRAFANA_ADMIN_PASSWORD=admin" >> .env
+
     - name: Verify Docker Compose configuration
       run: |
         docker-compose -f docker-compose.dev.yml config
         docker-compose -f docker-compose.prod.yml config
+      env:
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 
   api-tests:
     name: API Integration Tests
@@ -183,9 +191,17 @@ jobs:
           echo "⚠️ Model not found - will test Docker build only"
         fi
 
+    - name: Create .env file for Docker Compose
+      run: |
+        echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
+        echo "GRAFANA_ADMIN_USER=admin" >> .env
+        echo "GRAFANA_ADMIN_PASSWORD=admin" >> .env
+
     - name: Build and start services with Docker Compose
       run: |
         docker-compose -f docker-compose.dev.yml up -d --build
+      env:
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 
     - name: Wait for services to be healthy
       run: |

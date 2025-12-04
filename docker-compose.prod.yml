@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Initialization Container - Creates Vector DB on First Launch
   init-container:
