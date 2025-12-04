@@ -302,42 +302,36 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
         "is_closed_any_day": is_closed_any_day,
     }
 
-    # Show loading spinner
-    with st.spinner("🔄 Predicting rating..."):
-        try:
-            # Make API request
-            response = requests.post(API_URL, json=restaurant_data, timeout=10)
+    try:
+        # Make API request
+        response = requests.post(API_URL, json=restaurant_data, timeout=10)
 
-            if response.status_code == 200:
-                result = response.json()
+        if response.status_code == 200:
+            result = response.json()
 
-                # Display result in a nice format
-                st.success("✅ Prediction Successful!")
+            # Display result in a nice format
+            st.success("✅ Prediction Successful!")
 
-                # Create metrics display
-                col_res1, col_res2, col_res3 = st.columns(3)
+            # Create metrics display
+            col_res1, col_res2, col_res3 = st.columns(3)
 
-                with col_res1:
-                    st.metric(
-                        label="Predicted Rating",
-                        value=f"⭐ {result['predicted_rating']}/5",
-                    )
+            with col_res1:
+                st.metric(
+                    label="Predicted Rating",
+                    value=f"⭐ {result['predicted_rating']}/5",
+                )
 
-                with col_res2:
-                    st.metric(label="Model Version", value=result["model_version"])
+            with col_res2:
+                st.metric(label="Model Version", value=result["model_version"])
 
-                with col_res3:
-                    st.metric(label="Rating Scale", value=result["rating_scale"])
+            with col_res3:
+                st.metric(label="Rating Scale", value=result["rating_scale"])
 
-                # Show input summary
-                with st.expander("📋 Input Summary"):
-                    st.json(result["input_features"])
+            # Call RAG inference endpoint and display advice on frontend
+            st.markdown("---")
+            st.subheader("💡 AI-Generated Business Advice")
 
-                # Show full response
-                with st.expander("🔍 Full Response Details"):
-                    st.json(result)
-
-                # Call RAG inference endpoint in background - results printed to terminal only
+            with st.spinner("🤖 Generating personalized advice based on similar restaurants..."):
                 try:
                     inference_data = {
                         # Categorical fields
@@ -386,38 +380,49 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
                         timeout=30
                     )
 
-                    # Print results to terminal only
+                    # Display results on frontend
                     if inference_response.status_code == 200:
                         inference_result = inference_response.json()
+                        advice = inference_result['advice']
+
+                        # Print to terminal
                         print("✅ RAG Inference SUCCESS!")
                         print(f"Number of reviews retrieved: {inference_result['num_reviews_retrieved']}")
                         print(f"Status: {inference_result['status']}")
                         print(f"\n{'='*60}")
                         print("GENERATED ADVICE:")
                         print("="*60)
-                        print(inference_result['advice'])
+                        print(advice)
                         print("="*60 + "\n")
+
+                        # Check if fallback message
+                        if "No relevant historical reviews found" in advice:
+                            st.warning(advice)
+                        else:
+                            st.info(advice)
                     else:
                         print(f"❌ RAG Inference ERROR: {inference_response.status_code}")
                         print(f"Response: {inference_response.text}")
                         print("="*60 + "\n")
+                        st.error(f"Failed to generate advice: {inference_response.status_code}")
 
                 except Exception as inference_error:
                     print(f"❌ RAG Inference Exception: {str(inference_error)}")
                     print("="*60 + "\n")
+                    st.error(f"Error generating advice: {str(inference_error)}")
 
-            else:
-                st.error(f"❌ Error: {response.status_code}")
-                st.code(response.text)
+        else:
+            st.error(f"❌ Error: {response.status_code}")
+            st.code(response.text)
 
-        except requests.exceptions.ConnectionError:
-            st.error(
-                "❌ Failed to connect to the API. Make sure the FastAPI server is running."
-            )
-        except requests.exceptions.Timeout:
-            st.error("❌ Request timeout. The API is taking too long to respond.")
-        except Exception as e:
-            st.error(f"❌ An error occurred: {str(e)}")
+    except requests.exceptions.ConnectionError:
+        st.error(
+            "❌ Failed to connect to the API. Make sure the FastAPI server is running."
+        )
+    except requests.exceptions.Timeout:
+        st.error("❌ Request timeout. The API is taking too long to respond.")
+    except Exception as e:
+        st.error(f"❌ An error occurred: {str(e)}")
 
 # Sidebar with additional info
 with st.sidebar:
