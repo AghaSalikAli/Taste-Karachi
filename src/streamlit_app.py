@@ -248,7 +248,7 @@ with col2:
         options=["Accepts Debit Cards", "Cash Only"],
         index=0,
         horizontal=True,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
     accepts_debit_cards = payment_method == "Accepts Debit Cards"
     accepts_cash_only = payment_method == "Cash Only"
@@ -261,7 +261,9 @@ with col2:
     with col7_2:
         open_after_midnight = st.checkbox("Open After Midnight", value=False)
     with col7_3:
-        is_closed_any_day = st.checkbox("Closed Any Day", value=False, disabled=is_open_24_7)
+        is_closed_any_day = st.checkbox(
+            "Closed Any Day", value=False, disabled=is_open_24_7
+        )
 
     # Disable is_open_24_7 if is_closed_any_day is checked
     if is_closed_any_day:
@@ -331,7 +333,9 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
             st.markdown("---")
             st.subheader("💡 AI-Generated Business Advice")
 
-            with st.spinner("🤖 Generating personalized advice based on similar restaurants..."):
+            with st.spinner(
+                "🤖 Generating personalized advice based on similar restaurants..."
+            ):
                 try:
                     inference_data = {
                         # Categorical fields
@@ -365,9 +369,9 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
                     }
 
                     # Print request to terminal
-                    print("\n" + "="*60)
+                    print("\n" + "=" * 60)
                     print("RAG INFERENCE API CALL")
-                    print("="*60)
+                    print("=" * 60)
                     print(f"Category: {category}")
                     print(f"Area: {area}")
                     print(f"Price Level: {price_level}")
@@ -375,25 +379,25 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
                     print()
 
                     inference_response = requests.post(
-                        INFERENCE_URL,
-                        json=inference_data,
-                        timeout=30
+                        INFERENCE_URL, json=inference_data, timeout=30
                     )
 
                     # Display results on frontend
                     if inference_response.status_code == 200:
                         inference_result = inference_response.json()
-                        advice = inference_result['advice']
+                        advice = inference_result["advice"]
 
                         # Print to terminal
                         print("✅ RAG Inference SUCCESS!")
-                        print(f"Number of reviews retrieved: {inference_result['num_reviews_retrieved']}")
+                        print(
+                            f"Number of reviews retrieved: {inference_result['num_reviews_retrieved']}"
+                        )
                         print(f"Status: {inference_result['status']}")
                         print(f"\n{'='*60}")
                         print("GENERATED ADVICE:")
-                        print("="*60)
+                        print("=" * 60)
                         print(advice)
-                        print("="*60 + "\n")
+                        print("=" * 60 + "\n")
 
                         # Check if fallback message
                         if "No relevant historical reviews found" in advice:
@@ -401,14 +405,18 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
                         else:
                             st.info(advice)
                     else:
-                        print(f"❌ RAG Inference ERROR: {inference_response.status_code}")
+                        print(
+                            f"❌ RAG Inference ERROR: {inference_response.status_code}"
+                        )
                         print(f"Response: {inference_response.text}")
-                        print("="*60 + "\n")
-                        st.error(f"Failed to generate advice: {inference_response.status_code}")
+                        print("=" * 60 + "\n")
+                        st.error(
+                            f"Failed to generate advice: {inference_response.status_code}"
+                        )
 
                 except Exception as inference_error:
                     print(f"❌ RAG Inference Exception: {str(inference_error)}")
-                    print("="*60 + "\n")
+                    print("=" * 60 + "\n")
                     st.error(f"Error generating advice: {str(inference_error)}")
 
         else:

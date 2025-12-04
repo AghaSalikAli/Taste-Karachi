@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from rag import RAGEngine
 
+
 def main():
     print("=" * 60)
     print("RAG Engine Local Test")
@@ -31,12 +32,10 @@ def main():
         "category": "Fast Food Restaurant",
         "area": "DHA",
         "price_level": "PRICE_LEVEL_MODERATE",
-
         # === GOLDEN SUBSET - VIBE/OPERATION (Filter only if True) ===
         "is_open_24_7": False,
         "outdoor_seating": False,
         "live_music": False,
-
         # === OTHER FEATURES (Sent but NOT used for filtering) ===
         # These are still sent to maintain API compatibility
         # but are ignored in the retrieval process
@@ -110,7 +109,9 @@ def main():
     except Exception as e:
         print(f"\n✗ ERROR: {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     main()

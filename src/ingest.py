@@ -25,7 +25,7 @@ def load_and_merge_data():
         restaurants_df,
         on="google_maps_link",
         how="left",
-        suffixes=("_review", "_restaurant")
+        suffixes=("_review", "_restaurant"),
     )
 
     print(f"Merged dataset: {len(merged_df)} records")
@@ -45,14 +45,29 @@ def clean_data(df):
 
     # Define all boolean columns
     boolean_columns = [
-        "dine_in", "takeout", "delivery", "reservable",
-        "serves_breakfast", "serves_lunch", "serves_dinner",
-        "serves_coffee", "serves_dessert", "outdoor_seating",
-        "live_music", "good_for_children", "good_for_groups",
-        "good_for_watching_sports", "restroom", "parking_free_lot",
-        "parking_free_street", "accepts_debit_cards", "accepts_cash_only",
-        "wheelchair_accessible", "is_open_24_7", "open_after_midnight",
-        "is_closed_any_day"
+        "dine_in",
+        "takeout",
+        "delivery",
+        "reservable",
+        "serves_breakfast",
+        "serves_lunch",
+        "serves_dinner",
+        "serves_coffee",
+        "serves_dessert",
+        "outdoor_seating",
+        "live_music",
+        "good_for_children",
+        "good_for_groups",
+        "good_for_watching_sports",
+        "restroom",
+        "parking_free_lot",
+        "parking_free_street",
+        "accepts_debit_cards",
+        "accepts_cash_only",
+        "wheelchair_accessible",
+        "is_open_24_7",
+        "open_after_midnight",
+        "is_closed_any_day",
     ]
 
     # Fill NaN values in boolean columns with False
@@ -81,7 +96,7 @@ def initialize_chromadb():
     # Get or create collection
     collection = client.get_or_create_collection(
         name="restaurant_reviews",
-        metadata={"description": "Restaurant reviews with metadata"}
+        metadata={"description": "Restaurant reviews with metadata"},
     )
 
     print(f"Collection 'restaurant_reviews' initialized")
@@ -95,14 +110,29 @@ def prepare_metadata(row):
     # Define metadata columns
     categorical_columns = ["area", "price_level", "category"]
     boolean_columns = [
-        "dine_in", "takeout", "delivery", "reservable",
-        "serves_breakfast", "serves_lunch", "serves_dinner",
-        "serves_coffee", "serves_dessert", "outdoor_seating",
-        "live_music", "good_for_children", "good_for_groups",
-        "good_for_watching_sports", "restroom", "parking_free_lot",
-        "parking_free_street", "accepts_debit_cards", "accepts_cash_only",
-        "wheelchair_accessible", "is_open_24_7", "open_after_midnight",
-        "is_closed_any_day"
+        "dine_in",
+        "takeout",
+        "delivery",
+        "reservable",
+        "serves_breakfast",
+        "serves_lunch",
+        "serves_dinner",
+        "serves_coffee",
+        "serves_dessert",
+        "outdoor_seating",
+        "live_music",
+        "good_for_children",
+        "good_for_groups",
+        "good_for_watching_sports",
+        "restroom",
+        "parking_free_lot",
+        "parking_free_street",
+        "accepts_debit_cards",
+        "accepts_cash_only",
+        "wheelchair_accessible",
+        "is_open_24_7",
+        "open_after_midnight",
+        "is_closed_any_day",
     ]
 
     metadata = {}
@@ -127,7 +157,7 @@ def ingest_data(collection, df, batch_size=100):
 
     # Process in batches with progress bar
     for i in tqdm(range(0, len(df), batch_size), desc="Ingesting batches"):
-        batch_df = df.iloc[i:i + batch_size]
+        batch_df = df.iloc[i : i + batch_size]
 
         # Prepare batch data
         documents = []
@@ -146,11 +176,7 @@ def ingest_data(collection, df, batch_size=100):
             metadatas.append(metadata)
 
         # Add batch to collection
-        collection.add(
-            documents=documents,
-            ids=ids,
-            metadatas=metadatas
-        )
+        collection.add(documents=documents, ids=ids, metadatas=metadatas)
 
     print("=" * 60)
     print(f"\n✓ Successfully ingested {len(df)} records")

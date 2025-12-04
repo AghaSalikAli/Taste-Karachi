@@ -6,6 +6,7 @@ Performs a dummy query to trigger model download during initialization.
 import os
 import chromadb
 
+
 def warmup_chroma_cache():
     """Perform a dummy query to cache the embedding model."""
     print("\nWarming up ChromaDB cache...")
@@ -19,10 +20,7 @@ def warmup_chroma_cache():
         collection = client.get_collection("restaurant_reviews")
 
         # Perform a simple query to trigger model download
-        collection.query(
-            query_texts=["test restaurant"],
-            n_results=1
-        )
+        collection.query(query_texts=["test restaurant"], n_results=1)
 
         print("✓ ChromaDB cache warmed up successfully!")
         print("  Embedding model cached for fast inference")
@@ -30,6 +28,7 @@ def warmup_chroma_cache():
     except Exception as e:
         print(f"⚠️ Warning: Cache warmup failed: {e}")
         print("  Model will be downloaded on first API request")
+
 
 if __name__ == "__main__":
     warmup_chroma_cache()

@@ -8,9 +8,9 @@ from prometheus_client import Counter, Histogram
 
 # --- PROMETHEUS METRICS ---
 # Track latency of the RAG pipeline
-RAG_LATENCY = Histogram('rag_request_latency_seconds', 'RAG Pipeline Latency')
+RAG_LATENCY = Histogram("rag_request_latency_seconds", "RAG Pipeline Latency")
 # Track token usage for cost monitoring
-LLM_TOKEN_USAGE = Counter('llm_token_usage_total', 'Total LLM Tokens', ['type'])
+LLM_TOKEN_USAGE = Counter("llm_token_usage_total", "Total LLM Tokens", ["type"])
 
 
 class RAGEngine:
@@ -32,9 +32,7 @@ class RAGEngine:
             print("CRITICAL WARNING: GOOGLE_API_KEY is missing! RAG will fail.")
 
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
-            google_api_key=api_key,
-            temperature=0.3
+            model="gemini-2.0-flash", google_api_key=api_key, temperature=0.3
         )
 
     def retrieve_reviews(self, features, k=5):
@@ -48,14 +46,17 @@ class RAGEngine:
 
         Returns empty list if no results found at any level.
         """
-        category = features.get('category', 'restaurant')
-        area = features.get('area', 'Karachi')
-        price_level = features.get('price_level', 'moderate')
+        category = features.get("category", "restaurant")
+        area = features.get("area", "Karachi")
+        price_level = features.get("price_level", "moderate")
 
         # Identify vibe features that are True
         vibe_operation_fields = ["is_open_24_7", "outdoor_seating", "live_music"]
-        active_vibe_features = {field: True for field in vibe_operation_fields
-                               if features.get(field) is True}
+        active_vibe_features = {
+            field: True
+            for field in vibe_operation_fields
+            if features.get(field) is True
+        }
 
         # ATTEMPT 1: STRICT - All filters including vibe features
         print(f"[Retrieval] Attempt 1 (Strict): category + area + price + vibes")
@@ -64,7 +65,7 @@ class RAGEngine:
             area=area,
             price_level=price_level,
             vibe_features=active_vibe_features,
-            k=k
+            k=k,
         )
 
         if results:
@@ -78,7 +79,7 @@ class RAGEngine:
             area=area,
             price_level=price_level,
             vibe_features=None,
-            k=k
+            k=k,
         )
 
         if results:
@@ -88,11 +89,7 @@ class RAGEngine:
         # ATTEMPT 3: BROAD - Category only
         print(f"[Retrieval] Attempt 3 (Broad): category only")
         results = self._query_with_filters(
-            category=category,
-            area=None,
-            price_level=None,
-            vibe_features=None,
-            k=k
+            category=category, area=None, price_level=None, vibe_features=None, k=k
         )
 
         if results:
@@ -157,12 +154,10 @@ class RAGEngine:
 
         try:
             results = self.collection.query(
-                query_texts=[query_text],
-                n_results=k,
-                where=where_filter
+                query_texts=[query_text], n_results=k, where=where_filter
             )
             # Flatten list of lists and return
-            return results['documents'][0] if results['documents'] else []
+            return results["documents"][0] if results["documents"] else []
         except Exception as e:
             print(f"[Retrieval Error] {e}")
             return []
@@ -185,9 +180,12 @@ class RAGEngine:
 
             # Add vibe/operation features to description if present
             vibe_features = []
-            if features.get('outdoor_seating'): vibe_features.append('outdoor seating')
-            if features.get('live_music'): vibe_features.append('live music')
-            if features.get('is_open_24_7'): vibe_features.append('24/7 operation')
+            if features.get("outdoor_seating"):
+                vibe_features.append("outdoor seating")
+            if features.get("live_music"):
+                vibe_features.append("live music")
+            if features.get("is_open_24_7"):
+                vibe_features.append("24/7 operation")
 
             if vibe_features:
                 feature_desc += f" with {', '.join(vibe_features)}"
@@ -208,8 +206,8 @@ class RAGEngine:
             # Approx 4 chars per token
             input_tokens = len(prompt) / 4
             output_tokens = len(response.content) / 4
-            LLM_TOKEN_USAGE.labels(type='input').inc(input_tokens)
-            LLM_TOKEN_USAGE.labels(type='output').inc(output_tokens)
+            LLM_TOKEN_USAGE.labels(type="input").inc(input_tokens)
+            LLM_TOKEN_USAGE.labels(type="output").inc(output_tokens)
 
             return response.content
 

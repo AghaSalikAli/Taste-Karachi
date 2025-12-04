@@ -61,11 +61,7 @@ async def load_model():
         model = mlflow.pyfunc.load_model(model_uri)
 
         # Store model info
-        model_info = {
-            "name": MODEL_NAME,
-            "version": MODEL_VERSION,
-            "uri": model_uri
-        }
+        model_info = {"name": MODEL_NAME, "version": MODEL_VERSION, "uri": model_uri}
 
         print(f"✅ Model loaded successfully from registry!")
         print(f"   Model: {MODEL_NAME}")
@@ -93,6 +89,7 @@ async def load_model():
 # Define RAG inference input schema
 class InferenceRequest(BaseModel):
     """Request schema for RAG inference"""
+
     # Categorical fields
     category: str = Field(..., description="Restaurant category")
     area: str = Field(..., description="Restaurant area/location")
@@ -112,15 +109,25 @@ class InferenceRequest(BaseModel):
     live_music: Optional[bool] = Field(False, description="Has live music")
     good_for_children: Optional[bool] = Field(False, description="Good for children")
     good_for_groups: Optional[bool] = Field(False, description="Good for groups")
-    good_for_watching_sports: Optional[bool] = Field(False, description="Good for watching sports")
+    good_for_watching_sports: Optional[bool] = Field(
+        False, description="Good for watching sports"
+    )
     restroom: Optional[bool] = Field(False, description="Has restroom")
     parking_free_lot: Optional[bool] = Field(False, description="Free parking lot")
-    parking_free_street: Optional[bool] = Field(False, description="Free street parking")
-    accepts_debit_cards: Optional[bool] = Field(False, description="Accepts debit cards")
+    parking_free_street: Optional[bool] = Field(
+        False, description="Free street parking"
+    )
+    accepts_debit_cards: Optional[bool] = Field(
+        False, description="Accepts debit cards"
+    )
     accepts_cash_only: Optional[bool] = Field(False, description="Cash only")
-    wheelchair_accessible: Optional[bool] = Field(False, description="Wheelchair accessible")
+    wheelchair_accessible: Optional[bool] = Field(
+        False, description="Wheelchair accessible"
+    )
     is_open_24_7: Optional[bool] = Field(False, description="Open 24/7")
-    open_after_midnight: Optional[bool] = Field(False, description="Open after midnight")
+    open_after_midnight: Optional[bool] = Field(
+        False, description="Open after midnight"
+    )
     is_closed_any_day: Optional[bool] = Field(False, description="Closed any day")
 
     class Config:
@@ -133,7 +140,7 @@ class InferenceRequest(BaseModel):
                 "takeout": True,
                 "delivery": False,
                 "serves_lunch": True,
-                "serves_dinner": True
+                "serves_dinner": True,
             }
         }
 
@@ -257,7 +264,7 @@ def health_check():
         "status": "healthy",
         "model_loaded": model is not None,
         "rag_engine_loaded": rag_engine is not None,
-        "model_info": model_info
+        "model_info": model_info,
     }
 
 
@@ -266,16 +273,13 @@ def health_check():
 def get_model_info():
     """Get information about the loaded model"""
     if model is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Model not loaded"
-        )
+        raise HTTPException(status_code=503, detail="Model not loaded")
 
     return {
         "model_name": model_info.get("name"),
         "model_version": model_info.get("version"),
         "model_uri": model_info.get("uri"),
-        "mlflow_tracking_uri": MLFLOW_TRACKING_URI
+        "mlflow_tracking_uri": MLFLOW_TRACKING_URI,
     }
 
 
@@ -340,7 +344,7 @@ def generate_inference(request: InferenceRequest):
     if rag_engine is None:
         raise HTTPException(
             status_code=503,
-            detail="RAG Engine not initialized. Check server logs for details."
+            detail="RAG Engine not initialized. Check server logs for details.",
         )
 
     try:
@@ -385,9 +389,12 @@ def generate_inference(request: InferenceRequest):
 
         # Show active GOLDEN SUBSET vibe/operation features
         golden_vibe_features = []
-        if features.get('is_open_24_7'): golden_vibe_features.append('is_open_24_7')
-        if features.get('outdoor_seating'): golden_vibe_features.append('outdoor_seating')
-        if features.get('live_music'): golden_vibe_features.append('live_music')
+        if features.get("is_open_24_7"):
+            golden_vibe_features.append("is_open_24_7")
+        if features.get("outdoor_seating"):
+            golden_vibe_features.append("outdoor_seating")
+        if features.get("live_music"):
+            golden_vibe_features.append("live_music")
 
         if golden_vibe_features:
             print(f"Golden Subset Filters: {', '.join(golden_vibe_features)}")
@@ -415,15 +422,12 @@ def generate_inference(request: InferenceRequest):
             "advice": advice,
             "num_reviews_retrieved": len(reviews),
             "features_used": features,
-            "status": "success"
+            "status": "success",
         }
 
     except Exception as e:
         print(f"\n❌ ERROR in inference: {str(e)}\n")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Inference error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
 
 # Run with uvicorn if called directly
