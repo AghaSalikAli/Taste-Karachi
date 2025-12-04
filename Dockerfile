@@ -10,8 +10,10 @@ RUN apt-get update && \
     esac && \
     apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     python3-dev \
     curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies

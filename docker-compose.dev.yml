@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # FastAPI Backend Service
+# FastAPI Backend Service
   fastapi:
     build:
       context: .
@@ -9,11 +9,16 @@ services:
     container_name: taste-karachi-api-dev
     ports:
       - "8000:8000"
+    env_file:             # <--- NEW: Loads your .env file
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
       - ENV=development
+      - CHROMA_DB_PATH=/app/chroma_db_data  # <--- NEW: Tells code where DB is
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}    # <--- NEW: Explicitly passes key
     volumes:
       - ./src:/app/src
+      - ./chroma_db_data:/app/chroma_db_data # <--- NEW: Maps local DB to container
     networks:
       - taste-karachi-network
     healthcheck:
@@ -41,6 +46,8 @@ services:
     networks:
       - taste-karachi-network
     command: streamlit run src/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+    tty: true  # Allocate a pseudo-TTY for better terminal output
+    stdin_open: true  # Keep STDIN open
 
   # Prometheus Service
   prometheus:

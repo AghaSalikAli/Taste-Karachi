@@ -18,3 +18,7 @@ build/
 data/
 mlruns/
 mlartifacts/
+chroma_db_data/
+
+# environment files
+.env

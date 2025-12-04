@@ -12,6 +12,7 @@ st.set_page_config(
 
 # API endpoint (will connect to FastAPI service in Docker)
 API_URL = "http://fastapi:8000/predict"
+INFERENCE_URL = "http://fastapi:8000/inference"
 
 # Title and description
 st.title("🍽️ Taste Karachi - Restaurant Rating Predictor")
@@ -29,11 +30,88 @@ with col1:
     st.subheader("📍 Basic Information")
 
     # Basic categorical features
-    area = st.text_input(
+    area_option = st.selectbox(
         "Area/Location",
-        value="Clifton",
-        help="Enter the area in Karachi (e.g., Clifton, DHA, Gulshan-e-Iqbal)",
+        options=[
+            "Aram Bagh",
+            "Azam Basti",
+            "Bahadurabad",
+            "Baghdadi",
+            "Bahria Town",
+            "Buffer Zone",
+            "Burns Road",
+            "Cantonment",
+            "Central Jacob Lines",
+            "Central Karachi",
+            "Chakiwara",
+            "City Railway Colony",
+            "Civil Lines",
+            "Clifton",
+            "Delhi Mercantile Society",
+            "DHA",
+            "Federal B Area",
+            "Frere Town",
+            "Gadap Town",
+            "Garden East",
+            "Gari Khata",
+            "Gazdarabad",
+            "Gulberg Town",
+            "Gulistan-e-Johar",
+            "Gulshan-e-Iqbal",
+            "I.I. Chundrigar Road",
+            "Jamshed Quarters",
+            "KAECHS",
+            "KDA Scheme 1",
+            "Keamari",
+            "Kharadar",
+            "Khudadad Colony",
+            "Korangi",
+            "Lalazar",
+            "Landhi",
+            "Liaquatabad",
+            "MACHS",
+            "Malir",
+            "Mehmoodabad",
+            "Model Colony",
+            "Nanak Wara",
+            "Naval Colony",
+            "Nazimabad",
+            "New Chali",
+            "North Karachi",
+            "North Nazimabad",
+            "Orangi Town",
+            "Pak Colony",
+            "PECHS",
+            "Preedy Quarters",
+            "Rangiwara",
+            "Rohail Khand Society",
+            "Saddar",
+            "Scheme 33",
+            "Shah Faisal Town",
+            "Shahrah-e-Faisal",
+            "Sharfabad",
+            "Sindhi Muslim",
+            "Soldier Bazaar",
+            "Surjani Town",
+            "Tariq Road",
+            "Tipu Sultan",
+            "Urdu Bazaar",
+            "Zamzama",
+            "Other",
+        ],
+        index=13,  # Default to "Clifton"
+        help="Select the area in Karachi",
     )
+
+    # Show text input if "Other" is selected
+    if area_option == "Other":
+        area = st.text_input(
+            "Enter Custom Area",
+            value="",
+            help="Enter your area/location",
+        )
+    else:
+        area = area_option
 
     category_option = st.selectbox(
         "Restaurant Category",
@@ -97,23 +175,23 @@ with col1:
         index=1,
     )
 
-    st.subheader("🗺️ Location Coordinates")
+    st.subheader("🗺️ Estimated Location Coordinates")
     latitude = st.number_input(
         "Latitude",
         min_value=-90.0,
         max_value=90.0,
-        value=24.8138,
-        step=0.0001,
-        format="%.4f",
+        value=24.8,
+        step=0.1,
+        format="%.1f",
     )
 
     longitude = st.number_input(
         "Longitude",
         min_value=-180.0,
         max_value=180.0,
-        value=67.0011,
-        step=0.0001,
-        format="%.4f",
+        value=67.1,
+        step=0.1,
+        format="%.1f",
     )
 
 with col2:
@@ -165,11 +243,15 @@ with col2:
 
     # Payment
     st.markdown("**Payment Options:**")
-    col6_1, col6_2 = st.columns(2)
-    with col6_1:
-        accepts_debit_cards = st.checkbox("Accepts Debit Cards", value=True)
-    with col6_2:
-        accepts_cash_only = st.checkbox("Cash Only", value=False)
+    payment_method = st.radio(
+        "Payment Method",
+        options=["Accepts Debit Cards", "Cash Only"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    accepts_debit_cards = payment_method == "Accepts Debit Cards"
+    accepts_cash_only = payment_method == "Cash Only"
 
     # Operating hours
     st.markdown("**Operating Hours:**")
@@ -179,7 +261,11 @@ with col2:
     with col7_2:
         open_after_midnight = st.checkbox("Open After Midnight", value=False)
     with col7_3:
-        is_closed_any_day = st.checkbox("Closed Any Day", value=False)
+        is_closed_any_day = st.checkbox("Closed Any Day", value=False, disabled=is_open_24_7)
+
+    # Disable is_open_24_7 if is_closed_any_day is checked
+    if is_closed_any_day:
+        is_open_24_7 = False
 
 # Predict button
 st.markdown("---")
@@ -251,6 +337,75 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
                 with st.expander("🔍 Full Response Details"):
                     st.json(result)
 
+                # Call RAG inference endpoint in background - results printed to terminal only
+                try:
+                    inference_data = {
+                        # Categorical fields
+                        "category": category,
+                        "area": area,
+                        "price_level": price_level,
+                        # Boolean fields - pass all from the form
+                        "dine_in": dine_in,
+                        "takeout": takeout,
+                        "delivery": delivery,
+                        "reservable": reservable,
+                        "serves_breakfast": serves_breakfast,
+                        "serves_lunch": serves_lunch,
+                        "serves_dinner": serves_dinner,
+                        "serves_coffee": serves_coffee,
+                        "serves_dessert": serves_dessert,
+                        "outdoor_seating": outdoor_seating,
+                        "live_music": live_music,
+                        "good_for_children": good_for_children,
+                        "good_for_groups": good_for_groups,
+                        "good_for_watching_sports": good_for_watching_sports,
+                        "restroom": restroom,
+                        "parking_free_lot": parking_free_lot,
+                        "parking_free_street": parking_free_street,
+                        "accepts_debit_cards": accepts_debit_cards,
+                        "accepts_cash_only": accepts_cash_only,
+                        "wheelchair_accessible": wheelchair_accessible,
+                        "is_open_24_7": is_open_24_7,
+                        "open_after_midnight": open_after_midnight,
+                        "is_closed_any_day": is_closed_any_day,
+                    }
+
+                    # Print request to terminal
+                    print("\n" + "="*60)
+                    print("RAG INFERENCE API CALL")
+                    print("="*60)
+                    print(f"Category: {category}")
+                    print(f"Area: {area}")
+                    print(f"Price Level: {price_level}")
+                    print(f"Calling: {INFERENCE_URL}")
+                    print()
+
+                    inference_response = requests.post(
+                        INFERENCE_URL,
+                        json=inference_data,
+                        timeout=30
+                    )
+
+                    # Print results to terminal only
+                    if inference_response.status_code == 200:
+                        inference_result = inference_response.json()
+                        print("✅ RAG Inference SUCCESS!")
+                        print(f"Number of reviews retrieved: {inference_result['num_reviews_retrieved']}")
+                        print(f"Status: {inference_result['status']}")
+                        print(f"\n{'='*60}")
+                        print("GENERATED ADVICE:")
+                        print("="*60)
+                        print(inference_result['advice'])
+                        print("="*60 + "\n")
+                    else:
+                        print(f"❌ RAG Inference ERROR: {inference_response.status_code}")
+                        print(f"Response: {inference_response.text}")
+                        print("="*60 + "\n")
+
+                except Exception as inference_error:
+                    print(f"❌ RAG Inference Exception: {str(inference_error)}")
+                    print("="*60 + "\n")
+
             else:
                 st.error(f"❌ Error: {response.status_code}")
                 st.code(response.text)
@@ -276,9 +431,9 @@ with st.sidebar:
     - Available services
     - Amenities
     - Operating hours
-    
+
     **Model:** Restaurant Rating Prediction v1
-    
+
     **Technology Stack:**
     - FastAPI (Backend)
     - Streamlit (Frontend)
