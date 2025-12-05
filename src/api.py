@@ -476,6 +476,80 @@ class ChatRequest(BaseModel):
         }
 
 
+# Helper function to detect if a question needs fresh RAG retrieval
+def needs_rag_retrieval(message: str) -> bool:
+    """
+    Detect if the user's message requires searching the review database.
+    Returns True if the message contains patterns suggesting a search query.
+    """
+    message_lower = message.lower()
+
+    # Patterns that indicate user wants to search/find specific information
+    search_patterns = [
+        # Direct search requests
+        "which restaurant",
+        "what restaurant",
+        "find restaurant",
+        "show me restaurant",
+        "list restaurant",
+        "name some",
+        "give me example",
+        "give examples",
+        "can you find",
+        "search for",
+        "look for",
+        # Quote-based queries (looking for specific phrases in reviews)
+        "bursting with",
+        "said about",
+        "mentioned",
+        "reviews say",
+        "reviews mention",
+        "customers say",
+        "people say",
+        # Specific data requests
+        "which places",
+        "what places",
+        "top rated",
+        "highest rated",
+        "best reviewed",
+        "worst reviewed",
+        "most popular",
+        # Comparison/examples
+        "examples of",
+        "instance of",
+        "similar to",
+        "restaurants like",
+        "places with",
+        "restaurants with",
+        # Location-specific
+        "in clifton",
+        "in dha",
+        "in gulshan",
+        "in saddar",
+        "in tariq road",
+        # Category-specific searches
+        "chinese restaurant",
+        "pakistani restaurant",
+        "fast food",
+        "cafe",
+        "bbq",
+    ]
+
+    return any(pattern in message_lower for pattern in search_patterns)
+
+
+def semantic_search_reviews(query: str, k: int = 5) -> list[str]:
+    """
+    Perform semantic search on reviews using the user's query directly.
+    """
+    try:
+        results = rag_engine.collection.query(query_texts=[query], n_results=k)
+        return results["documents"][0] if results["documents"] else []
+    except Exception as e:
+        print(f"[Semantic Search Error] {e}")
+        return []
+
+
 # Chat endpoint for follow-up questions
 @app.post("/chat")
 def chat_followup(request: ChatRequest):
@@ -488,6 +562,7 @@ def chat_followup(request: ChatRequest):
     - The predicted rating
     - The RAG-generated advice
     - Previous conversation history
+    - Fresh RAG retrieval when the question requires searching the database
     """
     if rag_engine is None:
         raise HTTPException(
@@ -501,6 +576,16 @@ def chat_followup(request: ChatRequest):
         print(f"{'='*60}")
         print(f"User message: {request.message}")
         print(f"Conversation history length: {len(request.conversation_history)}")
+
+        # Check if we need to do fresh RAG retrieval
+        do_retrieval = needs_rag_retrieval(request.message)
+        retrieved_reviews = []
+
+        if do_retrieval:
+            print(f"🔍 Detected search query - performing fresh RAG retrieval...")
+            retrieved_reviews = semantic_search_reviews(request.message, k=5)
+            print(f"✓ Retrieved {len(retrieved_reviews)} relevant reviews")
+
         print(f"{'='*60}\n")
 
         # Build context from the session
@@ -544,6 +629,13 @@ def chat_followup(request: ChatRequest):
                 f"\nPreviously Generated Business Advice:\n{request.rag_advice}"
             )
 
+        # Add freshly retrieved reviews if we did a search
+        if retrieved_reviews:
+            reviews_text = "\n- ".join(retrieved_reviews)
+            context_parts.append(
+                f"\n📊 RELEVANT REVIEWS FROM DATABASE (based on your question):\n- {reviews_text}"
+            )
+
         context = "\n".join(context_parts)
 
         # Build conversation history for the prompt
@@ -552,8 +644,27 @@ def chat_followup(request: ChatRequest):
             role_label = "User" if msg.role == "user" else "Assistant"
             conversation_text += f"{role_label}: {msg.content}\n"
 
-        # Construct the prompt
-        prompt = f"""You are a helpful restaurant business consultant assistant for Taste Karachi.
+        # Construct the prompt - enhanced to use retrieved reviews
+        if retrieved_reviews:
+            prompt = f"""You are a helpful restaurant business consultant assistant for Taste Karachi.
+You are helping a user who is planning to open or improve a restaurant in Karachi, Pakistan.
+
+CONTEXT FROM THIS SESSION:
+{context}
+
+CONVERSATION HISTORY:
+{conversation_text}
+
+USER'S CURRENT QUESTION:
+{request.message}
+
+IMPORTANT: I've searched our database and found relevant reviews above. Use these reviews to provide specific, 
+data-backed answers. Quote or reference specific reviews when relevant. If the reviews don't contain the 
+exact information requested, acknowledge this and provide general advice instead.
+
+Please provide a helpful, specific response based on the context and retrieved reviews above."""
+        else:
+            prompt = f"""You are a helpful restaurant business consultant assistant for Taste Karachi.
 You are helping a user who is planning to open or improve a restaurant in Karachi, Pakistan.
 
 CONTEXT FROM THIS SESSION:
@@ -584,6 +695,8 @@ If the question is unrelated to restaurants or the context, politely redirect th
         return {
             "response": assistant_response,
             "status": "success",
+            "used_rag_retrieval": do_retrieval,
+            "num_reviews_retrieved": len(retrieved_reviews) if do_retrieval else 0,
         }
 
     except Exception as e:
