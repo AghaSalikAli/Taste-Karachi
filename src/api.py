@@ -12,6 +12,9 @@ from fastapi import FastAPI, HTTPException
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
+# Import Guardrails
+from src.guardrails import (GuardrailAction, GuardrailConfig,
+                            TasteKarachiGuardrails)
 # Import RAG Engine
 from src.rag import RAGEngine
 
@@ -45,6 +48,7 @@ MODEL_PATH = Path(__file__).parent.parent / "models"
 model = None
 model_info = {}
 rag_engine = None
+guardrails = None
 
 
 @app.on_event("startup")
@@ -76,6 +80,21 @@ async def load_model():
             print(f"⚠️ Warning: RAG Engine failed to initialize: {rag_error}")
             print(f"   Inference endpoint will not be available.")
             rag_engine = None
+
+        # Initialize Guardrails
+        print(f"\nInitializing Guardrails...")
+        global guardrails
+        guardrails_config = GuardrailConfig(
+            enable_pii_detection=True,
+            enable_prompt_injection_filter=True,
+            enable_off_topic_detection=True,
+            enable_hallucination_filter=True,
+            enable_toxicity_filter=True,
+            enable_competitor_filter=False,
+            strict_mode=False,  # Warn instead of block for off-topic
+        )
+        guardrails = TasteKarachiGuardrails(guardrails_config)
+        print(f"✅ Guardrails initialized successfully!")
 
     except Exception as e:
         print(f"❌ Error loading model from registry: {e}")
@@ -563,6 +582,10 @@ def chat_followup(request: ChatRequest):
     - The RAG-generated advice
     - Previous conversation history
     - Fresh RAG retrieval when the question requires searching the database
+
+    Includes guardrails for:
+    - Input validation (PII detection, prompt injection filter)
+    - Output moderation (toxicity filter, hallucination detection)
     """
     if rag_engine is None:
         raise HTTPException(
@@ -576,6 +599,27 @@ def chat_followup(request: ChatRequest):
         print(f"{'='*60}")
         print(f"User message: {request.message}")
         print(f"Conversation history length: {len(request.conversation_history)}")
+
+        # ============================================
+        # GUARDRAIL: Input Validation
+        # ============================================
+        if guardrails:
+            input_result = guardrails.validate_input(request.message)
+            print(
+                f"🛡️ Input Guardrail: {input_result.rule_type} -> {input_result.action.value}"
+            )
+
+            if input_result.action == GuardrailAction.BLOCK:
+                print(f"   ❌ Blocked: {input_result.reason}")
+                blocked_response = guardrails.get_blocked_response(input_result)
+                return {
+                    "response": blocked_response,
+                    "status": "blocked",
+                    "guardrail_triggered": input_result.rule_type,
+                    "guardrail_reason": input_result.reason,
+                    "used_rag_retrieval": False,
+                    "num_reviews_retrieved": 0,
+                }
 
         # Check if we need to do fresh RAG retrieval
         do_retrieval = needs_rag_retrieval(request.message)
@@ -644,11 +688,18 @@ def chat_followup(request: ChatRequest):
             role_label = "User" if msg.role == "user" else "Assistant"
             conversation_text += f"{role_label}: {msg.content}\n"
 
-        # Construct the prompt - enhanced to use retrieved reviews
+        # Construct the prompt - STRICTLY use only knowledge base data
         if retrieved_reviews:
             prompt = f"""You are a helpful restaurant business consultant assistant for Taste Karachi.
 You are helping a user who is planning to open or improve a restaurant in Karachi, Pakistan.
 
+⚠️ CRITICAL INSTRUCTION - KNOWLEDGE BASE ONLY:
+You must ONLY provide information that is explicitly present in the CONTEXT and REVIEWS provided below.
+DO NOT use any external knowledge or make up information.
+If the information is not in the provided context/reviews, say "Based on the reviews in our database, I don't have specific information about that. Here's what I can tell you from the available data..."
+NEVER suggest the user to search online, check other websites, or look elsewhere for information.
+ALWAYS base your response on the actual review data provided.
+
 CONTEXT FROM THIS SESSION:
 {context}
 
@@ -658,15 +709,24 @@ CONVERSATION HISTORY:
 USER'S CURRENT QUESTION:
 {request.message}
 
-IMPORTANT: I've searched our database and found relevant reviews above. Use these reviews to provide specific, 
-data-backed answers. Quote or reference specific reviews when relevant. If the reviews don't contain the 
-exact information requested, acknowledge this and provide general advice instead.
+INSTRUCTIONS:
+1. Answer ONLY using the reviews and context provided above.
+2. Quote or reference specific reviews when possible (e.g., "One review mentions...", "According to customer feedback...").
+3. If the reviews don't contain the exact information, clearly state: "The reviews in our database don't specifically mention [topic], but based on the available feedback..."
+4. DO NOT invent restaurant names, statistics, or facts not present in the data.
+5. DO NOT recommend searching online or visiting other websites.
 
-Please provide a helpful, specific response based on the context and retrieved reviews above."""
+Provide your response:"""
         else:
             prompt = f"""You are a helpful restaurant business consultant assistant for Taste Karachi.
 You are helping a user who is planning to open or improve a restaurant in Karachi, Pakistan.
 
+⚠️ CRITICAL INSTRUCTION - KNOWLEDGE BASE ONLY:
+You must ONLY provide information based on the CONTEXT provided below.
+DO NOT use any external knowledge or make up information.
+If you don't have specific data to answer, acknowledge this honestly.
+NEVER suggest the user to search online, check other websites, or look elsewhere for information.
+
 CONTEXT FROM THIS SESSION:
 {context}
 
@@ -676,15 +736,47 @@ CONVERSATION HISTORY:
 USER'S CURRENT QUESTION:
 {request.message}
 
-Please provide a helpful, specific response based on the context above. 
-Keep your response concise but informative. Focus on actionable advice relevant to the Karachi restaurant market.
-If the question is unrelated to restaurants or the context, politely redirect the conversation."""
+INSTRUCTIONS:
+1. If this is a greeting or simple question, respond naturally.
+2. For restaurant-specific questions without retrieved reviews, say: "I don't have specific review data for that query. Would you like me to search our database? Try asking about specific restaurants, areas, or what customers said about particular topics."
+3. DO NOT invent restaurant names, statistics, or facts.
+4. DO NOT recommend searching online or visiting other websites.
+5. Keep responses focused on what you actually know from the context.
+
+Provide your response:"""
 
         # Call LLM
         from langchain_core.messages import HumanMessage
 
         response = rag_engine.llm.invoke([HumanMessage(content=prompt)])
         assistant_response = response.content
+
+        # ============================================
+        # GUARDRAIL: Output Moderation
+        # ============================================
+        guardrail_warning = None
+        if guardrails:
+            output_result = guardrails.moderate_output(
+                assistant_response, retrieved_reviews
+            )
+            print(
+                f"🛡️ Output Guardrail: {output_result.rule_type} -> {output_result.action.value}"
+            )
+
+            if output_result.action == GuardrailAction.BLOCK:
+                print(f"   ❌ Blocked: {output_result.reason}")
+                assistant_response = guardrails.get_blocked_response(output_result)
+
+            elif output_result.action == GuardrailAction.MODIFY:
+                print(f"   ✏️ Modified: {output_result.reason}")
+                assistant_response = output_result.modified_content
+
+            elif output_result.action == GuardrailAction.WARN:
+                print(f"   ⚠️ Warning: {output_result.reason}")
+                guardrail_warning = output_result.reason
+                # Add disclaimer for potential hallucination
+                if "hallucination" in output_result.rule_type:
+                    assistant_response += guardrails.get_hallucination_disclaimer()
 
         print(f"{'='*60}")
         print("CHAT RESPONSE:")
@@ -697,6 +789,7 @@ If the question is unrelated to restaurants or the context, politely redirect th
             "status": "success",
             "used_rag_retrieval": do_retrieval,
             "num_reviews_retrieved": len(retrieved_reviews) if do_retrieval else 0,
+            "guardrail_warning": guardrail_warning,
         }
 
     except Exception as e:

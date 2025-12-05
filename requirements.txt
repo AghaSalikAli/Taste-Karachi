@@ -38,4 +38,6 @@ chromadb==1.3.5
 sentence-transformers==2.7.0
 langchain==0.1.0
 langchain-google-genai==0.0.6
-guardrails-ai==0.4.5
+
+# Note: Using custom guardrails implementation (src/guardrails.py) instead of nemoguardrails
+# for lighter weight deployment. The implementation follows NeMo Guardrails patterns.
