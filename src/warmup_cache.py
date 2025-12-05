@@ -4,6 +4,7 @@ Performs a dummy query to trigger model download during initialization.
 """
 
 import os
+
 import chromadb
 
 

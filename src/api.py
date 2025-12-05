@@ -1,16 +1,16 @@
 # src/api.py
 
-from fastapi import FastAPI, HTTPException
-from prometheus_fastapi_instrumentator import Instrumentator
+import os
+from pathlib import Path
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
 import mlflow
 import mlflow.pyfunc
 import pandas as pd
-from pathlib import Path
 import uvicorn
-from typing import Literal, Optional
-import os
+from fastapi import FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
+from pydantic import BaseModel, Field
 
 # Import RAG Engine
 from src.rag import RAGEngine
@@ -428,6 +428,167 @@ def generate_inference(request: InferenceRequest):
     except Exception as e:
         print(f"\n❌ ERROR in inference: {str(e)}\n")
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
+
+
+# Chat request schema
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="Role: 'user' or 'assistant'")
+    content: str = Field(..., description="Message content")
+
+
+class ChatRequest(BaseModel):
+    """Request schema for follow-up chat"""
+
+    message: str = Field(..., description="User's follow-up question")
+    conversation_history: list[ChatMessage] = Field(
+        default=[], description="Previous conversation messages"
+    )
+    # Context from the prediction session
+    restaurant_features: dict = Field(
+        default={}, description="Restaurant features from the form"
+    )
+    predicted_rating: Optional[float] = Field(
+        None, description="The predicted rating from the model"
+    )
+    rag_advice: Optional[str] = Field(
+        None, description="The RAG-generated advice given to the user"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "message": "What specific improvements would help most?",
+                "conversation_history": [
+                    {"role": "user", "content": "Tell me more about outdoor seating"},
+                    {
+                        "role": "assistant",
+                        "content": "Based on the reviews, outdoor seating...",
+                    },
+                ],
+                "restaurant_features": {
+                    "category": "Restaurant",
+                    "area": "Clifton",
+                    "price_level": "PRICE_LEVEL_MODERATE",
+                },
+                "predicted_rating": 4.2,
+                "rag_advice": "Key success factors include...",
+            }
+        }
+
+
+# Chat endpoint for follow-up questions
+@app.post("/chat")
+def chat_followup(request: ChatRequest):
+    """
+    Handle follow-up questions about the restaurant advice.
+
+    This endpoint maintains conversation context and uses the same Gemini LLM
+    to answer questions based on:
+    - The user's restaurant configuration
+    - The predicted rating
+    - The RAG-generated advice
+    - Previous conversation history
+    """
+    if rag_engine is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Chat service not available. RAG Engine not initialized.",
+        )
+
+    try:
+        print(f"\n{'='*60}")
+        print("CHAT FOLLOW-UP REQUEST")
+        print(f"{'='*60}")
+        print(f"User message: {request.message}")
+        print(f"Conversation history length: {len(request.conversation_history)}")
+        print(f"{'='*60}\n")
+
+        # Build context from the session
+        context_parts = []
+
+        # Add restaurant features context
+        if request.restaurant_features:
+            features = request.restaurant_features
+            context_parts.append(
+                f"Restaurant Configuration:\n"
+                f"- Category: {features.get('category', 'N/A')}\n"
+                f"- Area: {features.get('area', 'N/A')}\n"
+                f"- Price Level: {features.get('price_level', 'N/A')}"
+            )
+
+            # Add notable features
+            notable_features = []
+            if features.get("outdoor_seating"):
+                notable_features.append("outdoor seating")
+            if features.get("live_music"):
+                notable_features.append("live music")
+            if features.get("is_open_24_7"):
+                notable_features.append("24/7 operation")
+            if features.get("delivery"):
+                notable_features.append("delivery service")
+            if features.get("dine_in"):
+                notable_features.append("dine-in")
+
+            if notable_features:
+                context_parts.append(f"- Key Features: {', '.join(notable_features)}")
+
+        # Add predicted rating context
+        if request.predicted_rating is not None:
+            context_parts.append(
+                f"\nPredicted Rating: {request.predicted_rating}/5 stars"
+            )
+
+        # Add RAG advice context
+        if request.rag_advice:
+            context_parts.append(
+                f"\nPreviously Generated Business Advice:\n{request.rag_advice}"
+            )
+
+        context = "\n".join(context_parts)
+
+        # Build conversation history for the prompt
+        conversation_text = ""
+        for msg in request.conversation_history[-10:]:  # Keep last 10 messages
+            role_label = "User" if msg.role == "user" else "Assistant"
+            conversation_text += f"{role_label}: {msg.content}\n"
+
+        # Construct the prompt
+        prompt = f"""You are a helpful restaurant business consultant assistant for Taste Karachi.
+You are helping a user who is planning to open or improve a restaurant in Karachi, Pakistan.
+
+CONTEXT FROM THIS SESSION:
+{context}
+
+CONVERSATION HISTORY:
+{conversation_text}
+
+USER'S CURRENT QUESTION:
+{request.message}
+
+Please provide a helpful, specific response based on the context above. 
+Keep your response concise but informative. Focus on actionable advice relevant to the Karachi restaurant market.
+If the question is unrelated to restaurants or the context, politely redirect the conversation."""
+
+        # Call LLM
+        from langchain_core.messages import HumanMessage
+
+        response = rag_engine.llm.invoke([HumanMessage(content=prompt)])
+        assistant_response = response.content
+
+        print(f"{'='*60}")
+        print("CHAT RESPONSE:")
+        print(f"{'='*60}")
+        print(assistant_response)
+        print(f"{'='*60}\n")
+
+        return {
+            "response": assistant_response,
+            "status": "success",
+        }
+
+    except Exception as e:
+        print(f"\n❌ ERROR in chat: {str(e)}\n")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 
 # Run with uvicorn if called directly

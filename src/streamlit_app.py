@@ -10,9 +10,22 @@ st.set_page_config(
     layout="wide",
 )
 
-# API endpoint (will connect to FastAPI service in Docker)
+# API endpoints (will connect to FastAPI service in Docker)
 API_URL = "http://fastapi:8000/predict"
 INFERENCE_URL = "http://fastapi:8000/inference"
+CHAT_URL = "http://fastapi:8000/chat"
+
+# Initialize session state for chat
+if "chat_messages" not in st.session_state:
+    st.session_state.chat_messages = []
+if "chat_context" not in st.session_state:
+    st.session_state.chat_context = {
+        "restaurant_features": {},
+        "predicted_rating": None,
+        "rag_advice": None,
+    }
+if "prediction_made" not in st.session_state:
+    st.session_state.prediction_made = False
 
 # Title and description
 st.title("🍽️ Taste Karachi - Restaurant Rating Predictor")
@@ -404,6 +417,16 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
                             st.warning(advice)
                         else:
                             st.info(advice)
+
+                        # Store context for chat
+                        st.session_state.chat_context = {
+                            "restaurant_features": inference_data,
+                            "predicted_rating": result["predicted_rating"],
+                            "rag_advice": advice,
+                        }
+                        st.session_state.prediction_made = True
+                        # Clear previous chat when new prediction is made
+                        st.session_state.chat_messages = []
                     else:
                         print(
                             f"❌ RAG Inference ERROR: {inference_response.status_code}"
@@ -431,6 +454,112 @@ if st.button("🔮 Predict Rating", type="primary", use_container_width=True):
         st.error("❌ Request timeout. The API is taking too long to respond.")
     except Exception as e:
         st.error(f"❌ An error occurred: {str(e)}")
+
+# ============================================
+# CHATBOT SECTION - Follow-up Questions
+# ============================================
+st.markdown("---")
+st.header("💬 Ask Follow-up Questions")
+
+if st.session_state.prediction_made:
+    st.markdown(
+        """
+    Have questions about the prediction or advice? Ask our AI consultant below!
+    The chatbot has context of your restaurant configuration and the generated advice.
+    """
+    )
+
+    # Display chat messages
+    chat_container = st.container()
+    with chat_container:
+        for message in st.session_state.chat_messages:
+            if message["role"] == "user":
+                with st.chat_message("user"):
+                    st.write(message["content"])
+            else:
+                with st.chat_message("assistant", avatar="🤖"):
+                    st.write(message["content"])
+
+    # Chat input
+    if user_question := st.chat_input(
+        "Ask a follow-up question about your restaurant...",
+        key="chat_input",
+    ):
+        # Add user message to chat
+        st.session_state.chat_messages.append(
+            {"role": "user", "content": user_question}
+        )
+
+        # Display user message immediately
+        with st.chat_message("user"):
+            st.write(user_question)
+
+        # Get AI response
+        with st.chat_message("assistant", avatar="🤖"):
+            with st.spinner("Thinking..."):
+                try:
+                    # Prepare chat request
+                    chat_data = {
+                        "message": user_question,
+                        "conversation_history": [
+                            {"role": m["role"], "content": m["content"]}
+                            for m in st.session_state.chat_messages[:-1]
+                        ],  # Exclude current message
+                        "restaurant_features": st.session_state.chat_context[
+                            "restaurant_features"
+                        ],
+                        "predicted_rating": st.session_state.chat_context[
+                            "predicted_rating"
+                        ],
+                        "rag_advice": st.session_state.chat_context["rag_advice"],
+                    }
+
+                    # Call chat API
+                    chat_response = requests.post(CHAT_URL, json=chat_data, timeout=30)
+
+                    if chat_response.status_code == 200:
+                        chat_result = chat_response.json()
+                        assistant_message = chat_result["response"]
+
+                        # Display and store assistant message
+                        st.write(assistant_message)
+                        st.session_state.chat_messages.append(
+                            {"role": "assistant", "content": assistant_message}
+                        )
+                    else:
+                        error_msg = f"Sorry, I couldn't process that. Error: {chat_response.status_code}"
+                        st.error(error_msg)
+                        st.session_state.chat_messages.append(
+                            {"role": "assistant", "content": error_msg}
+                        )
+
+                except requests.exceptions.Timeout:
+                    error_msg = "Response timed out. Please try again."
+                    st.error(error_msg)
+                    st.session_state.chat_messages.append(
+                        {"role": "assistant", "content": error_msg}
+                    )
+                except Exception as e:
+                    error_msg = f"An error occurred: {str(e)}"
+                    st.error(error_msg)
+                    st.session_state.chat_messages.append(
+                        {"role": "assistant", "content": error_msg}
+                    )
+
+        # Rerun to update chat display
+        st.rerun()
+
+    # Clear chat button
+    if st.session_state.chat_messages:
+        if st.button("🗑️ Clear Chat History", key="clear_chat"):
+            st.session_state.chat_messages = []
+            st.rerun()
+
+else:
+    st.info(
+        "👆 Fill in the restaurant details above and click **Predict Rating** to get personalized advice. "
+        "Then you can ask follow-up questions here!"
+    )
 
 # Sidebar with additional info
 with st.sidebar:

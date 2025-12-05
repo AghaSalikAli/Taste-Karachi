@@ -1,9 +1,10 @@
 import os
-import chromadb
 import time
+
+import chromadb
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
 from prometheus_client import Counter, Histogram
 
 # --- PROMETHEUS METRICS ---

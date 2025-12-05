@@ -4,8 +4,9 @@ Ingests restaurant reviews with metadata into a local ChromaDB instance.
 """
 
 import os
-import pandas as pd
+
 import chromadb
+import pandas as pd
 from tqdm import tqdm
 
 

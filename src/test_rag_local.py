@@ -4,7 +4,9 @@ Tests retrieval and generation capabilities in isolation.
 """
 
 import os
+
 from dotenv import load_dotenv
+
 from rag import RAGEngine
 
 
