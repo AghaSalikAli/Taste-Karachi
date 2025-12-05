@@ -132,11 +132,11 @@ class GuardrailConfig:
 class InputGuardrails:
     """Input validation guardrails for user messages"""
 
-    # PII Patterns
+    # PII Patterns - tuned to reduce false positives
     PII_PATTERNS = {
         "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
-        "phone_pk": r"\b(?:\+92|0)?[0-9]{10,11}\b",  # Pakistani phone numbers
-        "phone_intl": r"\b\+?[1-9]\d{1,14}\b",  # International format
+        "phone_pk": r"\b(?:\+92|0)[0-9]{10}\b",  # Pakistani phone numbers (must start with +92 or 0)
+        "phone_intl": r"\b\+[1-9]\d{9,14}\b",  # International format (must have + prefix, 10-15 digits)
         "credit_card": r"\b(?:\d{4}[-\s]?){3}\d{4}\b",
         "cnic": r"\b\d{5}-\d{7}-\d{1}\b",  # Pakistani CNIC
         "passport": r"\b[A-Z]{2}\d{7}\b",  # Pakistani passport
@@ -233,7 +233,8 @@ class InputGuardrails:
             matches = re.findall(pattern, text, re.IGNORECASE)
             if matches:
                 detected_pii.append(pii_type)
-                PII_DETECTED.labels(pii_type=pii_type).inc(len(matches))
+                # Increment by 1 per request (not per match) to avoid inflated counts
+                PII_DETECTED.labels(pii_type=pii_type).inc(1)
 
         latency = time.time() - start
         GUARDRAIL_LATENCY.labels(check_type="pii_detection").observe(latency)
