@@ -1,18 +1,7 @@
-## Team Members
+# Team Contribution
 
-| Name             | ERP ID | 
-|------------------|--------|
-| Agha Salik Ali   | 26986  | 
-| Ahmad Murtaza    | 24478  | 
-| Fizza Zehra      | 26944  | 
-
-## Task Mapping
-
-| Member           | Tasks & Responsibilities                                      |
-|------------------|--------------------------------------------------------------|
-| Agha Salik Ali   | Data preparation, ML model development, API design           |
-| Ahmad Murtaza    | FastAPI backend, CI/CD setup, Dockerization, documentation   |
-| Fizza Zehra      | Monitoring (Prometheus, Grafana, CloudWatch), Streamlit UI   |
-
----
-
+| Name           | ERP ID | Tasks Completed                                                                                            |
+| -------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| Agha Salik Ali | 26986  | Data cleaning & preprocessing, ML model training & evaluation, RAG system design, vector database setup    |
+| Ahmad Murtaza  | 24478  | API development & integration, containerization & orchestration, CI/CD pipeline setup, AWS cloud setup     |
+| Fizza Zehra    | 26944  | Streamlit frontend integration, safety guardrails & validation, monitoring & observability, drift analysis |

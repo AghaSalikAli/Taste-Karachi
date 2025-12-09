@@ -1,44 +1,132 @@
-<img src="images/logo.svg" alt="Taste Karachi Logo" width="300" height="300" />
+<div align="center">
+  <img src="images/logo.svg" alt="Taste Karachi Logo" width="300" height="300" />
 
-#
+  # Taste Karachi
 
-# Taste Karachi
+  **AI-powered restaurant insights for Karachi's next successful eatery**
 
-MLOps project that predicts restaurant ratings in Karachi (0-5 scale) based on 20+ features including location, amenities, services, and operational characteristics.
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+  [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](docker-compose.dev.yml)
 
-## 🌐 Live Demo
+</div>
 
-Try the application on our public instance:
+---
 
-### Available Services
+## Table of Contents
 
-| Service              | URL                                | Description                               |
-| -------------------- | ---------------------------------- | ----------------------------------------- |
-| 🎨 **Streamlit UI**  | http://54.226.237.246:8501         | Interactive web interface for predictions |
-| 🔌 **FastAPI**       | http://54.226.237.246:8000         | REST API backend                          |
-| 📚 **API Docs**      | http://54.226.237.246:8000/docs    | Interactive API documentation             |
-| 📊 **Prometheus**    | http://54.226.237.246:9090         | Metrics collection                        |
-| 📈 **Grafana**       | http://54.226.237.246:3000         | Monitoring dashboards (admin/admin)       |
-| 📉 **Metrics**       | http://54.226.237.246:8000/metrics | Prometheus metrics endpoint               |
-| 👩‍💻 **MLFlow Server** | http://54.226.237.246:5000/        | Model experiments                         |
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Quick Start](#-quick-start)
+- [Live Demo](#-live-demo)
+- [API Usage](#-api-usage)
+- [Prompt Engineering](#-prompt-engineering)
+- [RAG Pipeline](#-rag-pipeline)
+- [Monitoring & Observability](#-monitoring--observability)
+- [Cloud Deployment](#-cloud-deployment)
+- [CI/CD Pipeline](#-cicd-pipeline)
+- [Security](#-security)
+- [FAQ](#-faq)
+- [Team](#-team)
 
-## ☁️ Cloud Services Used
+---
 
-This project leverages several AWS cloud services for deployment, storage, and monitoring:
+## Overview
 
-- **AWS EC2 (t3.micro)**: Hosts the application services including FastAPI, Streamlit, Prometheus, and Grafana.
-- **AWS S3**: Used for storing trained machine learning models artefacts, enabling easy access and versioning.
-- **AWS CloudWatch**: Provides monitoring and logging for the deployed services, including resource usage and application logs.
+A complete MLOps + LLMOps system that predicts restaurant ratings (0-5 scale) and delivers AI-powered business insights for Karachi's food industry. Built on 20+ features from 800 restaurants and 16,000+ real customer reviews. This was designed to help future restaurant owners in Karachi to tackle challenges early on.
 
-### Quick API Test
+**Key Capabilities:**
 
-**Health Check:**
+- **ML Rating Prediction**: Regression model with MLflow tracking
+- **RAG-Powered Insights**: Gemini 2.0 Flash + ChromaDB for business recommendations
+- **Production Guardrails**: Input validation, PII detection, output moderation
+- **Tracking**: Prometheus + Grafana + Evidently AI
+- **Containerized**: Multi-stage Docker builds with dev/prod profiles
+- **Cloud-Native**: Deployed on AWS EC2 with CloudWatch integration
 
-```bash
-curl http://54.226.237.246:8000/health
+---
+
+## Architecture
+
+<div align="center">
+  <img src="images/flowchart.svg" alt="System Architecture" width="100%" />
+</div>
+
+### Data Flow
+
+```mermaid
+graph LR
+    A[User Input] --> B[FastAPI + Guardrails]
+    B --> C[ML Model Prediction]
+    B --> D[RAG Engine]
+    D --> E[ChromaDB Reviews Retrieval]
+    E --> F[Gemini 2.0 LLM]
+    F --> G[Output Validation]
+    G --> H[Response]
+
+    C --> I[Prometheus Metrics]
+    F --> I
+    I --> J[Grafana Dashboards]
 ```
 
-**Make a Prediction:**
+**Components:**
+
+- **Ingestion**: `src/ingest.py` indexes 16k reviews into ChromaDB vector store
+- **Inference API**: `src/api.py` serves predictions + RAG responses via FastAPI
+- **Guardrails**: `src/guardrails.py` enforces safety policies (see [SECURITY.md](SECURITY.md))
+- **Monitoring**: Prometheus + Grafana track latency, tokens, drift, guardrail events
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Docker Desktop
+- Git
+- Google API Key
+- 2GB+ disk space
+
+### Local Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/AghaSalikAli/Taste-Karachi.git
+cd Taste-Karachi
+
+# 2. Configure API key
+echo "GOOGLE_API_KEY=your_actual_key_here" > .env
+
+# 3. Launch stack (first run: ~30 min for vector DB initialization)
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+### Access Services
+
+| Service      | URL                        | Credentials |
+| ------------ | -------------------------- | ----------- |
+| Streamlit UI | http://localhost:8501      | -           |
+| FastAPI Docs | http://localhost:8000/docs | -           |
+| Prometheus   | http://localhost:9090      | -           |
+| Grafana      | http://localhost:3000      | admin/admin |
+
+---
+
+## Live Demo
+
+**Public Instance**: Hosted on AWS EC2 (us-east-1)
+
+| Service      | Endpoint                   | Description                 |
+| ------------ | -------------------------- | --------------------------- |
+| Streamlit UI | http://54.226.237.246:8501 | Interactive web interface   |
+| API          | http://54.226.237.246:8000 | REST API + Swagger docs     |
+| Prometheus   | http://54.226.237.246:9090 | Metrics collection          |
+| Grafana      | http://54.226.237.246:3000 | Dashboards (admin/changeme) |
+| MLflow       | http://54.226.237.246:5000 | Experiment tracking         |
+
+### Try It Now
+
+**Predict Rating:**
 
 ```bash
 curl -X POST "http://54.226.237.246:8000/predict" \
@@ -75,193 +163,244 @@ curl -X POST "http://54.226.237.246:8000/predict" \
   }'
 ```
 
-**Response:**
-
-```json
-{
-  "predicted_rating": 4.25,
-  "rating_scale": "0-5",
-  "model_version": "v1",
-  "model_name": "Restaurant_rating_prediction_regression",
-  "input_features": {
-    "area": "Clifton",
-    "price_level": "PRICE_LEVEL_MODERATE",
-    "category": "Restaurant"
-  }
-}
-```
-
-### Using the Streamlit Interface
-
-For a user-friendly experience, visit the **Streamlit UI** at http://54.226.237.246:8501:
-
-1. Fill in restaurant details (location, amenities, services)
-2. Click **"Predict Rating"**
-3. View the predicted rating and detailed metrics
-
-## 🚀 Local Development
-
-Run the complete stack locally:
+**Get AI Business Advice:**
 
 ```bash
-docker-compose -f docker-compose.dev.yml up -d --build
+curl -X POST "http://54.226.237.246:8000/inference" \
+  -H "Content-Type: application/json" \
+  -d '{"area": "Clifton", "category": "Chinese Restaurant",
+       "price_level": "PRICE_LEVEL_MODERATE"}'
 ```
 
-**Local Services:**
+---
 
-- **Streamlit UI**: http://localhost:8501
-- **FastAPI API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/admin)
+## Prompt Engineering
 
-## 📊 Features
+We evaluated **4 prompting strategies** on a held-out test set. See [prompt_report.md](prompt_report.md) for full analysis.
 
-- **ML Model**: Rating prediction with MLflow integration
-- **FastAPI Backend**: REST API with automatic documentation
-- **Streamlit Frontend**: Interactive web interface
-- **Monitoring**: Prometheus metrics + Grafana dashboards
-- **CI/CD**: Automated testing, linting, and security scans
-- **Production-Ready**: Separate dev/prod configurations
+**Files:**
 
-## 📈 Monitoring
+- `prompting-experiments/eval.jsonl` - Test dataset
+- `prompting-experiments/prompt_evaluation_results.jsonl` - Evaluation outputs
 
-**Live Instance:**
+---
 
-- **Grafana Dashboards**: http://54.226.237.246:3000 (admin/admin)
-- **Prometheus**: http://54.226.237.246:9090
-- **Metrics Endpoint**: http://54.226.237.246:8000/metrics
+## RAG Pipeline
 
-**Local Development:**
+See [RAG.md](RAG.md) for full details.
 
-- **Grafana Dashboards**: http://localhost:3000 (admin/admin)
-- **Prometheus**: http://localhost:9090
-- **Metrics Endpoint**: http://localhost:8000/metrics
+### Files: `src/ingest.py` + `src/rag.py`
 
-**Features:**
+**Ingestion Pipeline:**
 
-- Pre-configured Grafana dashboard with request rates, latency, status codes
-- Prometheus scrapes FastAPI metrics every 10s
-- Real-time monitoring of API performance and health
+```python
+# Index 16,000+ reviews into ChromaDB
+python src/ingest.py
+# Stores: embeddings, metadata (area, category, rating, etc..)
+# Vector Store: ./chroma_db_data/
+```
 
-## 🧪 API Testing
+**Retrieval Process:**
 
-**Test Live Instance:**
+1. User query → Hybrid search in ChromaDB using metadata (top-k=5)
+2. Retrieved reviews → Injected into Gemini 2.0 prompt
+3. LLM generates contextualized business advice
+4. Follow up questions within the same context
+
+---
+
+## Monitoring & Observability
+
+### MLflow Experiment Tracking
+
+- **URI**: http://54.226.237.246:5000
+- **Registered Model**: `Restaurant_rating_prediction_regression` v1
+- **Tracked Metrics**: RMSE, MAE, R², training time
+
+### Evidently AI - Data Drift
+
+- **Dashboard**: [screenshots/evidently-ai/dashboard.png](screenshots/evidently-ai/dashboard.png)
+- **Monitors**: Feature drift on a held out test set, prediction distribution shifts from training data
+- **Files**: `src/drift.py`
+
+### Prometheus + Grafana
+
+**Metrics Tracked:**
+
+- API latency (p50, p95, p99)
+- Response status codes
+- Token usage & cost estimation
+- Guardrail violations (injection attempts, PII detections, toxicity blocks)
+
+**Access**: http://54.226.237.246:3000 (user: `admin`, pass: `changeme`)
+
+### Cloudwatch
+
+**Metrics Tracked:**
+
+Cloudwatch was used to monitor the EC2 instance.
+
+Metrics Tracked:
+
+- Cpu metrics [screenshots/cloudwatch/cpu_metrics.png](screenshots/cloudwatch/cpu_metrics.png)
+- Log groups [screenshots/cloudwatch/log_groups.png](screenshots/cloudwatch/log_groups.png)
+- Ram metrics [screenshots/cloudwatch/ram_metrics.png](screenshots/cloudwatch/ram_metrics.png)
+
+---
+
+## Cloud Deployment
+
+### AWS Services Used
+
+#### 1. EC2 (Compute)
+
+- **Instance**: t2.xlarge (4 vCPU, 2GB RAM)
+- **Purpose**: Hosts all Docker containers (API, UI, monitoring)
+- **Region**: us-east-1
+- **Security Group**: Ports 8000, 8501, 3000, 9090, 5000
+
+#### 2. CloudWatch (Monitoring)
+
+- **Log Streams**: Container logs from Docker via AWS CloudWatch Agent
+- **Alarms**: CPU > 80%, disk usage > 90%
+
+### Reproduce Deployment
 
 ```bash
-# Health check
-curl http://54.226.237.246:8000/health
+# 1. Launch EC2 instance (Ubuntu 22.04)
+# 2. Install Docker + Docker Compose
+sudo apt-get update && sudo apt-get install docker.io docker-compose -y
 
-# Make prediction (see full example above in Live Demo section)
-curl -X POST http://54.226.237.246:8000/predict -H "Content-Type: application/json" -d '{...}'
+# 3. Clone repo
+git clone https://github.com/AghaSalikAli/Taste-Karachi.git
+cd Taste-Karachi
+
+# 4. Configure secrets
+echo "GOOGLE_API_KEY=your_key" > .env
+
+# 5. Deploy production stack
+docker-compose -f docker-compose.prod.yml up -d
+
+# 6. Setup CloudWatch Agent (optional)
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+sudo dpkg -i amazon-cloudwatch-agent.deb
+# Configure with IAM role for log shipping
 ```
 
-**Test Local Instance:**
+---
 
-```bash
-# Health check
-curl http://localhost:8000/health
+## 🔄 CI/CD Pipeline
 
-# Run test script
-python src/test.py
-```
+**File**: `.github/workflows/ci.yml`
 
-## 📁 Project Structure
+### Pipeline Stages
 
-```
-Taste-Karachi/
-├── src/                    # Application code
-├── prometheus/             # Prometheus configuration
-├── notebooks/              # Cleaning and Training Notebooks
-├── grafana/                # Grafana dashboards & provisioning
-├── screenshots/            # Evidently AI & CloudWatch Screenshots
-├── docker-compose.dev.yml  # Development environment
-└── docker-compose.prod.yml # Production environment
-```
+#### 1. Code Quality
+
+- **Linting**: `flake8 src/` + `black --check .`
+- **Import Sorting**: `isort --check-only`
+- **Pre-commit**: All hooks validated
+
+#### 2. Security
+
+- **Dependency Scan**: `safety check -r requirements.txt`
+- **Secret Detection**: `detect-secrets` via pre-commit
+
+#### 3. Testing
+
+- API integration tests (endpoint validation)
+- Docker Compose full stack tests
+
+#### 4. Docker Build
+
+- Multi-stage build validation
+- Docker Compose configuration verification
+
+**Triggers**: Push to `main`/`develop`, Pull Requests
+
+---
+
+## 🔒 Security
+
+### Guardrails Implementation (`src/guardrails.py`)
+
+**Input Validation:**
+
+- Prompt injection detection (regex pattern matching)
+- PII scanning (email, Pakistani phone numbers, CNIC, credit cards, passports)
+- Off-topic query filtering (non-restaurant content)
+
+**Output Moderation:**
+
+- Toxicity detection (pattern-based filtering)
+- Hallucination prevention (grounding phrase validation, context overlap checks)
+
+**Compliance:**
+
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community guidelines
+- [SECURITY.md](SECURITY.md) - Detailed security policies
+- [LICENSE](LICENSE) - MIT License
+
+---
 
 ## ❓ FAQ
 
-### Setup & Installation
+### Common Build Errors
 
-**Prerequisites:** Docker Desktop, Git, 2GB+ disk space
+**Q: "ChromaDB initialization takes forever"**
+A: First run processes 16k reviews (20-30 min). Subsequent runs use cached volume.
 
-**Quick Start with Docker (Recommended):**
+**Q: "Port 8000 already in use"**
+A: Kill existing process: `lsof -ti:8000 | xargs kill -9`
 
-```bash
-# 1. Clone the repository
-git clone <repo-url> && cd Taste-Karachi
+### Platform-Specific Setup
 
-# 2. Create .env file with your API key
-echo "GOOGLE_API_KEY=your_key_here" > .env
-
-# 3. Launch all services
-docker-compose -f docker-compose.dev.yml up --build
-```
-
-**Windows Execution Policy Error:**
+**Windows:**
 
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# Use WSL2 backend in Docker Desktop
+wsl --set-default-version 2
 ```
 
-**Docker WSL Error (Windows):**
-
-```powershell
-wsl --install && wsl --set-default-version 2
-```
-
-### Common Issues
-
-**Port Already in Use:**
+**Mac (M1/M2):**
 
 ```bash
-# Windows
-netstat -ano | findstr :8000
-taskkill /PID <PID> /F
-
-# Mac/Linux
-lsof -i :8000
-kill -9 <PID>
+# No changes needed - Docker handles ARM64 architecture
 ```
 
-**503 Service Unavailable:** Model not loaded. Train model with `notebooks/train.ipynb` first.
-
-**Container OOM (Exit 137):** Increase Docker memory to 4GB+ (Settings > Resources)
-
-**Grafana Dashboard No Data:**
-
-1. Check datasource: http://localhost:3000
-2. Verify Prometheus: http://localhost:9090
-3. Test metrics: http://localhost:8000/metrics
-
-**Clean Reset:**
+**Linux:**
 
 ```bash
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml build --no-cache
-docker-compose -f docker-compose.dev.yml up -d
+# Add user to docker group to avoid sudo
+sudo usermod -aG docker $USER
 ```
 
-### Debugging
+### Environment Variables
 
-**View Logs:**
+Required in `.env`:
 
 ```bash
-# All services
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Specific service
-docker logs taste-karachi-api-dev
+GOOGLE_API_KEY=your_key_here
 ```
 
-**Container Shell:**
+---
 
-```bash
-docker exec -it taste-karachi-api-dev bash
-```
+## 👥 Team
 
-### System Architecture Overview
+See [CONTRIBUTION.md](CONTRIBUTION.md) for detailed task mapping.
 
-Below is a high-level architecture of the Taste Karachi MLOps pipeline:
+| Member         | Student ID |
+| -------------- | ---------- |
+| Agha Salik Ali | 26986      |
+| Ahmad Murtaza  | 24478      |
+| Fizza Zehra    | 26944      |
 
-![alt text](images/flowchart.svg)
+---
+
+<div align="center">
+
+  **[View Demo](http://54.226.237.246:8501)** • **[API Docs](http://54.226.237.246:8000/docs)**
+
+  Made for Karachi's food entrepreneurs. Keeping Karachi food great!
+
+</div>
