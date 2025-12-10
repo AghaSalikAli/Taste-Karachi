@@ -13,8 +13,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
 # Import Guardrails
-from src.guardrails import (GuardrailAction, GuardrailConfig,
-                            TasteKarachiGuardrails)
+from src.guardrails import GuardrailAction, GuardrailConfig, TasteKarachiGuardrails
+
 # Import RAG Engine
 from src.rag import RAGEngine
 

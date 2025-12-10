@@ -397,10 +397,16 @@ See [CONTRIBUTION.md](CONTRIBUTION.md) for detailed task mapping.
 
 ---
 
+## 🙏 Acknowledgments
+
+Thank you **Sir Sualeh** for your guidance throughout the project! :D
+
+---
+
 <div align="center">
 
   **[View Demo](http://54.226.237.246:8501)** • **[API Docs](http://54.226.237.246:8000/docs)**
 
   Made for Karachi's food entrepreneurs. Keeping Karachi food great!
-
+  
 </div>
